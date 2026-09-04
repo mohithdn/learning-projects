@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Academic Records Studio - Learning Notebook</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --panel-bg: #12121a;
+            --panel-border: #222233;
+            --accent-gold: #c8a84b;
+            --accent-teal: #1a5c52;
+            --accent-teal-bright: #28a793;
+            --text-primary: #e6e6ed;
+            --text-secondary: #9a9ab0;
+            --code-bg: #07070a;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-code: "Fira Code", "Courier New", Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            padding-bottom: 60px;
+        }
+
+        /* Layout Structure */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--panel-border);
+            padding: 40px 0;
+            background: linear-gradient(180deg, rgba(26, 92, 82, 0.15) 0%, rgba(10, 10, 15, 0) 100%);
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 800px;
+            margin-bottom: 20px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-teal);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Navigation / Sticky TOC */
+        .nav-wrapper {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-dark);
+            border-bottom: 1px solid var(--panel-border);
+            z-index: 100;
+            padding: 10px 0;
+            backdrop-filter: blur(8px);
+        }
+
+        .toc-nav {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 5px;
+        }
+
+        .toc-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .toc-nav a:hover, .toc-nav a.active {
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+            background: rgba(200, 168, 75, 0.05);
+        }
+
+        /* Section Cards */
+        .concept-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 30px;
+            margin-top: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .concept-title {
+            font-size: 1.8rem;
+            color: var(--accent-gold);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Interactive Map */
+        .concept-map {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .map-node {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--panel-border);
+            padding: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .map-node:hover {
+            border-color: var(--accent-teal-bright);
+            transform: translateY(-2px);
+            background: rgba(40, 167, 147, 0.05);
+        }
+
+        .map-node h4 {
+            color: var(--accent-gold);
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .map-node p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Grid Utilities */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .two-col { grid-template-columns: 1fr; }
+        }
+
+        /* Callout Boxes */
+        .callout {
+            padding: 15px 20px;
+            border-left: 4px solid var(--accent-teal);
+            background: rgba(26, 92, 82, 0.1);
+            border-radius: 0 6px 6px 0;
+            margin: 15px 0;
+        }
+
+        .callout.pitfall {
+            border-left-color: var(--danger);
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .callout-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+        }
+
+        /* Interactive Widget Styling */
+        .widget-box {
+            background: var(--bg-dark);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .widget-title {
+            font-size: 1rem;
+            color: var(--accent-teal-bright);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Form / Inputs Inside Widgets */
+        input[type="range"], input[type="text"], select {
+            width: 100%;
+            padding: 8px 12px;
+            background: #181824;
+            border: 1px solid var(--panel-border);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-family: inherit;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background: var(--accent-teal);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: var(--accent-teal-bright);
+        }
+
+        /* Code Display */
+        .code-block {
+            position: relative;
+            background: var(--code-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 15px;
+            font-family: var(--font-code);
+            font-size: 0.88rem;
+            overflow-x: auto;
+            color: #dcdcdc;
+            margin: 15px 0;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            font-size: 0.75rem;
+            padding: 3px 8px;
+        }
+
+        .kw { color: #569cd6; }
+        .fn { color: #dcdcaa; }
+        .str { color: #ce9178; }
+        .cm { color: #57a64a; }
+        .num { color: #b5cea8; }
+
+        /* Custom Visualizations */
+        .schema-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+        }
+
+        .schema-col {
+            background: #181824;
+            border: 1px solid var(--panel-border);
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .schema-col.active {
+            border-color: var(--accent-gold);
+            background: rgba(200, 168, 75, 0.1);
+        }
+
+        .schema-col .col-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: var(--accent-gold);
+        }
+
+        .schema-col .col-type {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Branch Highlight Viz */
+        .branch-node {
+            padding: 10px;
+            border: 1px solid var(--panel-border);
+            margin: 5px 0;
+            border-radius: 4px;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .branch-node.active {
+            opacity: 1;
+            border-color: var(--accent-teal-bright);
+            background: rgba(40, 167, 147, 0.15);
+        }
+
+        /* Chart Viz Canvas */
+        canvas {
+            background: #101018;
+            border-radius: 4px;
+            width: 100%;
+            height: 200px;
+        }
+
+        .table-sim {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .table-sim th, .table-sim td {
+            border: 1px solid var(--panel-border);
+            padding: 6px 10px;
+            text-align: left;
+        }
+
+        .table-sim th {
+            background: rgba(200, 168, 75, 0.1);
+            color: var(--accent-gold);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <span class="badge">Interactive Learning Notebook</span>
+            <h1 class="hero-title">Student Academic Records Studio</h1>
+            <p class="hero-subtitle">Master Relational Databases, Streamlit UI Integration, SQL Aggregations, and Dynamic Visualizations through practical interactive components.</p>
+        </div>
+    </header>
+
+    <div class="nav-wrapper">
+        <div class="container">
+            <nav class="toc-nav">
+                <a href="#overview">Overview Map</a>
+                <a href="#concept1">1. SQLite Schema</a>
+                <a href="#concept2">2. Business Logic</a>
+                <a href="#concept3">3. Safe Transactions</a>
+                <a href="#concept4">4. SQL Aggregations</a>
+                <a href="#concept5">5. Data Pipeline</a>
+                <a href="#architecture">Architecture Diagram</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <section id="overview" class="concept-card">
+            <h2 class="concept-title">💡 System Concepts Map</h2>
+            <p>Click any core architectural concept below to jump to its interactive visual sandbox:</p>
+            <div class="concept-map">
+                <div class="map-node" onclick="scrollToSection('concept1')">
+                    <h4>1. Schema Initialization</h4>
+                    <p>Relational storage and type definitions in SQLite[cite: 39].</p>
+                </div>
+                <div class="map-node" onclick="scrollToSection('concept2')">
+                    <h4>2. Business Rule Logic</h4>
+                    <p>Determining academic grades conditionally[cite: 39].</p>
+                </div>
+                <div class="map-node" onclick="scrollToSection('concept3')">
+                    <h4>3. Parameterized Operations</h4>
+                    <p>Safe transactional queries avoiding SQL injection[cite: 39].</p>
+                </div>
+                <div class="map-node" onclick="scrollToSection('concept4')">
+                    <h4>4. Analytical SQL</h4>
+                    <p>Aggregations using <code>GROUP BY</code> and filters[cite: 39].</p>
+                </div>
+                <div class="map-node" onclick="scrollToSection('concept5')">
+                    <h4>5. Visualization Bridge</h4>
+                    <p>Connecting Pandas DataFrames to UI charts[cite: 39].</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="concept1" class="concept-card">
+            <h2 class="concept-title">1. Relational Database Schema & SQLite</h2>
+            <p><strong>What it is:</strong> Schema definitions establish structured tables, defining explicitly how attributes are preserved inside an embedded database engine like SQLite[cite: 39].</p>
+            
+            <div class="callout">
+                <div class="callout-title">Real-World Analogy</div>
+                Think of the schema as a physical set of labeled filing drawers. Each drawer is restricted to store only a specific type of document (e.g., Numbers only in the Roll No section) to avoid structural confusion[cite: 39].
+            </div>
+
+            <div class="widget-box">
+                <div class="widget-title">
+                    <span>Interactive Schema Inspector</span>
+                    <span style="font-size:0.75rem; color: var(--text-secondary);">Click columns to inspect constraint roles</span>
+                </div>
+                <div class="schema-grid">
+                    <div class="schema-col active" onclick="inspectCol('roll_no', 'INTEGER PRIMARY KEY', 'Unique primary identifier for each student record. Prevents duplicates automatically.')">
+                        <div class="col-name">roll_no</div>
+                        <div class="col-type">INTEGER PK</div>
+                    </div>
+                    <div class="schema-col" onclick="inspectCol('name', 'TEXT NOT NULL', 'Stores the student\'s full string name. Mandatory value.')">
+                        <div class="col-name">name</div>
+                        <div class="col-type">TEXT</div>
+                    </div>
+                    <div class="schema-col" onclick="inspectCol('department', 'TEXT NOT NULL', 'Academic department name category.')">
+                        <div class="col-name">department</div>
+                        <div class="col-type">TEXT</div>
+                    </div>
+                    <div class="schema-col" onclick="inspectCol('course', 'TEXT NOT NULL', 'Enrolled course title.')">
+                        <div class="col-name">course</div>
+                        <div class="col-type">TEXT</div>
+                    </div>
+                    <div class="schema-col" onclick="inspectCol('marks', 'REAL NOT NULL', 'Floating-point numerical grade point representation (0.0 - 100.0).')">
+                        <div class="col-name">marks</div>
+                        <div class="col-type">REAL</div>
+                    </div>
+                    <div class="schema-col" onclick="inspectCol('grade', 'TEXT NOT NULL', 'Single character evaluated letter grade.')">
+                        <div class="col-name">grade</div>
+                        <div class="col-type">TEXT</div>
+                    </div>
+                </div>
+
+                <div id="schema-details" class="callout" style="margin-top:15px; background: #151520;">
+                    <strong>Selected Column:</strong> <span id="col-title" style="color:var(--accent-gold);">roll_no</span><br/>
+                    <strong>Type & Constraints:</strong> <code id="col-type-str">INTEGER PRIMARY KEY</code><br/>
+                    <span id="col-desc" style="font-size:0.85rem; color:var(--text-secondary);">Unique primary identifier for each student record. Prevents duplicates automatically.</span>
+                </div>
+            </div>
+
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="kw">def</span> <span class="fn">init_db</span>():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(<span class="str">"""
+        CREATE TABLE IF NOT EXISTS students (
+            roll_no INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            department TEXT NOT NULL,
+            course TEXT NOT NULL,
+            marks REAL NOT NULL,
+            grade TEXT NOT NULL
+        )
+    """</span>) [cite: 39]
+    conn.commit()
+    conn.close()
+            </div>
+
+            <div class="callout pitfall">
+                <div class="callout-title">Engineering Pitfall</div>
+                Never leave connections unclosed! Databases lock up when connections leak. Notice the use of <code>finally: conn.close()</code> in clean database operations[cite: 39].
+            </div>
+        </section>
+
+        <section id="concept2" class="concept-card">
+            <h2 class="concept-title">2. Automated Business Rule Engine</h2>
+            <p><strong>What it is:</strong> Pure deterministic functions that run calculation logic prior to writing entries into persistence layers[cite: 39].</p>
+
+            <div class="widget-box">
+                <div class="widget-title">Live Grade Evaluator Engine</div>
+                <label for="marks-slider">Adjust Marks Value: <strong id="marks-val" style="color:var(--accent-gold)">82.5</strong></label>
+                <input type="range" id="marks-slider" min="0" max="100" step="0.5" value="82.5" oninput="updateGradeCalc(this.value)">
+
+                <div style="margin-top: 15px;">
+                    <div id="branch-A" class="branch-node">IF marks >= 90 &rarr; Grade "A"</div>
+                    <div id="branch-B" class="branch-node active">ELIF marks >= 75 &rarr; Grade "B"</div>
+                    <div id="branch-C" class="branch-node">ELIF marks >= 60 &rarr; Grade "C"</div>
+                    <div id="branch-D" class="branch-node">ELSE &rarr; Grade "D"</div>
+                </div>
+            </div>
+
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="kw">def</span> <span class="fn">calculate_grade</span>(marks: <span class="kw">float</span>) -> <span class="kw">str</span>:
+    <span class="kw">if</span> marks >= <span class="num">90</span>: <span class="kw">return</span> <span class="str">"A"</span>
+    <span class="kw">elif</span> marks >= <span class="num">75</span>: <span class="kw">return</span> <span class="str">"B"</span>
+    <span class="kw">elif</span> marks >= <span class="num">60</span>: <span class="kw">return</span> <span class="str">"C"</span>
+    <span class="kw">else</span>: <span class="kw">return</span> <span class="str">"D"</span> [cite: 39]
+            </div>
+        </section>
+
+        <section id="concept3" class="concept-card">
+            <h2 class="concept-title">3. Parameterized Query Security</h2>
+            <p><strong>What it is:</strong> Parameterization separates SQL execution statements from untrusted user inputs, completely neutralizing SQL Injection attacks[cite: 39].</p>
+
+            <div class="two-col">
+                <div class="widget-box">
+                    <div class="widget-title" style="color:var(--danger)">Unsafe String Formatting</div>
+                    <div style="font-size: 0.8rem; margin-bottom: 5px;">Raw query generation:</div>
+                    <div class="code-block" style="font-size:0.75rem">
+f"INSERT INTO students VALUES ('{name}')"
+                    </div>
+                    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:5px;">
+                        If user inputs: <code>' OR '1'='1</code>, the malicious payload modifies code structures dynamically, leading to unauthorized data breaches!
+                    </p>
+                </div>
+
+                <div class="widget-box">
+                    <div class="widget-title" style="color:var(--success)">Safe Parameterized Binding</div>
+                    <div style="font-size: 0.8rem; margin-bottom: 5px;">SQLite engine binding:</div>
+                    <div class="code-block" style="font-size:0.75rem">
+cur.execute("INSERT INTO... VALUES (?, ?)", (val1, val2)) [cite: 39]
+                    </div>
+                    <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:5px;">
+                        Placeholders <code>?</code> force SQLite to treat user strings strictly as literal content values, neutralizing execution vectors[cite: 39].
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="concept4" class="concept-card">
+            <h2 class="concept-title">4. Analytical Aggregations & Reports</h2>
+            <p><strong>What it is:</strong> Grouping tabular data using SQL functions like <code>AVG()</code> and <code>COUNT()</code> to convert granular records into high-level statistical summaries[cite: 39].</p>
+
+            <div class="widget-box">
+                <div class="widget-title">Interactive Query Simulator</div>
+                <select id="query-select" onchange="runQuerySim()">
+                    <option value="all">SELECT * FROM students;</option>
+                    <option value="top">SELECT name, marks FROM students WHERE marks >= 75 ORDER BY marks DESC;</option>
+                    <option value="dept">SELECT department, AVG(marks) AS avg_marks GROUP BY department;</option>
+                </select>
+
+                <div class="code-block" id="sql-display">
+                    SELECT * FROM students;
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table class="table-sim" id="query-results">
+                        </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="concept5" class="concept-card">
+            <h2 class="concept-title">5. Data Pipeline & Visualization Bridge</h2>
+            <p><strong>What it is:</strong> Extracting database rows directly into Pandas DataFrames, programmatically sorting numeric features, and constructing web visual charts[cite: 39].</p>
+
+            <div class="widget-box">
+                <div class="widget-title">Dynamic Bar Chart Engine</div>
+                <canvas id="chartCanvas"></canvas>
+            </div>
+
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cm"># Load database results cleanly into Pandas DataFrame</span>
+df = pd.read_sql_query(query, conn) [cite: 39]
+
+<span class="cm"># Isolate numeric columns for auto-chart rendering</span>
+numeric_cols = df.select_dtypes(include=<span class="str">"number"</span>).columns.tolist() [cite: 39]
+st.bar_chart(df[numeric_cols]) [cite: 39]
+            </div>
+        </section>
+
+        <section id="architecture" class="concept-card">
+            <h2 class="concept-title">🔄 Full Application Data Pipeline</h2>
+            <div class="widget-box" style="text-align: center; padding: 30px;">
+                <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="border: 1px solid var(--accent-gold); padding: 10px; border-radius: 4px; min-width: 120px;">
+                        <strong>1. User UI</strong><br/><span style="font-size:0.75rem; color: var(--text-secondary);">Streamlit Form Input</span>
+                    </div>
+                    &rarr;
+                    <div style="border: 1px solid var(--accent-teal-bright); padding: 10px; border-radius: 4px; min-width: 120px;">
+                        <strong>2. Business Logic</strong><br/><span style="font-size:0.75rem; color: var(--text-secondary);">calculate_grade()</span>
+                    </div>
+                    &rarr;
+                    <div style="border: 1px solid var(--accent-gold); padding: 10px; border-radius: 4px; min-width: 120px;">
+                        <strong>3. Database</strong><br/><span style="font-size:0.75rem; color: var(--text-secondary);">SQLite Insert/Select</span>
+                    </div>
+                    &rarr;
+                    <div style="border: 1px solid var(--accent-teal-bright); padding: 10px; border-radius: 4px; min-width: 120px;">
+                        <strong>4. Presentation</strong><br/><span style="font-size:0.75rem; color: var(--text-secondary);">Pandas & Charts</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // Sample DB State
+        const dbData = [
+            { roll_no: 101, name: "Mohith", department: "Computer Science", course: "ISE", marks: 92.0, grade: "A" },
+            { roll_no: 102, name: "Dilip", department: "Computer Science", course: "DSE", marks: 88.5, grade: "A" },
+            { roll_no: 103, name: "ABC", department: "Computer Science", course: "AIV", marks: 78.0, grade: "B" },
+            { roll_no: 104, name: "xyz", department: "Computer Science", course: "AIFC", marks: 65.0, grade: "C" }
+        ];
+
+        // Nav Scroll
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Concept 1 Inspector
+        function inspectCol(name, typeStr, desc) {
+            document.querySelectorAll('.schema-col').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            document.getElementById('col-title').innerText = name;
+            document.getElementById('col-type-str').innerText = typeStr;
+            document.getElementById('col-desc').innerText = desc;
+        }
+
+        // Concept 2 Dynamic Branching
+        function updateGradeCalc(val) {
+            document.getElementById('marks-val').innerText = val;
+            
+            document.querySelectorAll('.branch-node').forEach(el => el.classList.remove('active'));
+            
+            if (val >= 90) {
+                document.getElementById('branch-A').classList.add('active');
+            } else if (val >= 75) {
+                document.getElementById('branch-B').classList.add('active');
+            } else if (val >= 60) {
+                document.getElementById('branch-C').classList.add('active');
+            } else {
+                document.getElementById('branch-D').classList.add('active');
+            }
+        }
+
+        // Concept 4 & 5 Table & Chart Simulation
+        function runQuerySim() {
+            const queryType = document.getElementById('query-select').value;
+            const sqlDisplay = document.getElementById('sql-display');
+            const table = document.getElementById('query-results');
+            
+            let html = '';
+            let chartLabels = [];
+            let chartData = [];
+
+            if (queryType === 'all') {
+                sqlDisplay.innerText = "SELECT * FROM students;";
+                html = `<tr><th>roll_no</th><th>name</th><th>department</th><th>course</th><th>marks</th><th>grade</th></tr>`;
+                dbData.forEach(r => {
+                    html += `<tr><td>${r.roll_no}</td><td>${r.name}</td><td>${r.department}</td><td>${r.course}</td><td>${r.marks}</td><td>${r.grade}</td></tr>`;
+                    chartLabels.push(r.name);
+                    chartData.push(r.marks);
+                });
+            } else if (queryType === 'top') {
+                sqlDisplay.innerText = "SELECT name, marks FROM students WHERE marks >= 75 ORDER BY marks DESC;";
+                html = `<tr><th>name</th><th>marks</th></tr>`;
+                dbData.filter(r => r.marks >= 75).forEach(r => {
+                    html += `<tr><td>${r.name}</td><td>${r.marks}</td></tr>`;
+                    chartLabels.push(r.name);
+                    chartData.push(r.marks);
+                });
+            } else if (queryType === 'dept') {
+                sqlDisplay.innerText = "SELECT department, AVG(marks) AS avg_marks FROM students GROUP BY department;";
+                html = `<tr><th>department</th><th>avg_marks</th></tr>`;
+                html += `<tr><td>Computer Science</td><td>80.875</td></tr>`;
+                chartLabels = ['Computer Science'];
+                chartData = [80.875];
+            }
+
+            table.innerHTML = html;
+            renderChart(chartLabels, chartData);
+        }
+
+        // Simple HTML Canvas Chart Renderer
+        function renderChart(labels, data) {
+            const canvas = document.getElementById('chartCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth - 40;
+            canvas.height = 180;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const barWidth = 40;
+            const gap = 30;
+            const startX = 50;
+            const maxVal = 100;
+
+            for (let i = 0; i < data.length; i++) {
+                const barHeight = (data[i] / maxVal) * (canvas.height - 50);
+                const x = startX + i * (barWidth + gap);
+                const y = canvas.height - barHeight - 30;
+
+                // Draw Bar
+                ctx.fillStyle = '#1a5c52';
+                ctx.fillRect(x, y, barWidth, barHeight);
+
+                // Draw Border Highlight
+                ctx.strokeStyle = '#c8a84b';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, barWidth, barHeight);
+
+                // Draw Value
+                ctx.fillStyle = '#e6e6ed';
+                ctx.font = '12px sans-serif';
+                ctx.fillText(data[i], x, y - 5);
+
+                // Draw Label
+                ctx.fillText(labels[i], x, canvas.height - 10);
+            }
+        }
+
+        // Copy Code Functionality
+        function copyCode(btn) {
+            const code = btn.parentElement.innerText.replace('Copy', '').trim();
+            navigator.clipboard.writeText(code);
+            btn.innerText = "Copied!";
+            setTimeout(() => btn.innerText = "Copy", 2000);
+        }
+
+        // Initial setup
+        window.onload = function() {
+            runQuerySim();
+        };
+    </script>
+</body>
+</html>
