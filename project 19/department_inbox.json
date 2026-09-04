@@ -1,0 +1,13 @@
+{
+  "Account": [
+    {
+      "received_at": "2026-09-04T12:39:30",
+      "sla_deadline": "2026-09-04T20:39:16",
+      "priority": "High",
+      "sentiment": "Neutral",
+      "summary": "The customer is unable to log into their account due to an 'Invalid credentials' error despite resetting their password.",
+      "original_email": "An issue with my account login.\nI am currently unable to access my account even after resetting my password. The system continues to display an \u201cInvalid credentials\u201d message.\nCould you please check the status of my ticket and help resolve this issue as soon as possible? I would appreciate an update on the expected resolution time.",
+      "draft_reply": "Hello,\n\nThank you for reaching out, and I am truly sorry for the trouble you are experiencing. I completely understand how frustrating it is to be locked out of your account with an \"Invalid credentials\" message, especially after you've already taken the time to reset your password. \n\nI have flagged your ticket as a high priority and escalated it directly to our technical account team to look into why the system isn't recognizing your updated credentials. They are actively reviewing your profile to clear any sync errors causing this block. \n\nWe are working to resolve this as quickly as possible, and you can expect an update with the next steps from our team within the next 2 to 4 hours. \n\nThank you so much for your patience while we get this sorted out for you.\n\nWarm regards,\n\nAccount Support Team"
+    }
+  ]
+}
