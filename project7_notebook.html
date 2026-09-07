@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Recommender Agent — Learning Notebook</title>
+<style>
+  :root{
+    --ink: #14110F;
+    --ink-2: #1B1714;
+    --paper: #EDE6D6;
+    --paper-dim: #C9BFAE;
+    --red: #A63D40;
+    --red-dim: #7C2F31;
+    --gold: #D4A73A;
+    --gold-dim: #9C7F2C;
+    --teal: #2E5F5B;
+    --teal-light: #4C8783;
+    --muted: #9C9186;
+    --border: rgba(237,230,214,0.14);
+    --border-strong: rgba(237,230,214,0.28);
+    --serif: Georgia, 'Times New Roman', Cambria, serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --mono: 'SF Mono', Consolas, 'Courier New', monospace;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--sans);
+    line-height:1.6;
+    font-size:16px;
+  }
+  ::selection{background:var(--gold); color:var(--ink);}
+  a{color:var(--gold);}
+
+  /* ---------- layout shell ---------- */
+  .shell{
+    display:grid;
+    grid-template-columns:230px minmax(0,760px);
+    justify-content:center;
+    gap:56px;
+    max-width:1120px;
+    margin:0 auto;
+    padding:0 24px 120px;
+  }
+  @media (max-width: 920px){
+    .shell{grid-template-columns:1fr; gap:0; padding:0 18px 100px;}
+  }
+
+  /* ---------- sticky nav ---------- */
+  nav.toc{
+    position:sticky;
+    top:28px;
+    align-self:start;
+    max-height:calc(100vh - 56px);
+    overflow-y:auto;
+    padding-top:64px;
+  }
+  nav.toc .toc-title{
+    font-family:var(--serif);
+    font-style:italic;
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:14px;
+  }
+  nav.toc ul{list-style:none; margin:0; padding:0;}
+  nav.toc li{margin:0;}
+  nav.toc a{
+    display:block;
+    padding:7px 0 7px 14px;
+    border-left:2px solid var(--border);
+    color:var(--paper-dim);
+    text-decoration:none;
+    font-size:14px;
+    transition:color .15s, border-color .15s;
+  }
+  nav.toc a:hover{color:var(--paper);}
+  nav.toc a.active{
+    color:var(--gold);
+    border-left-color:var(--gold);
+  }
+  @media (max-width:920px){
+    nav.toc{
+      position:static;
+      max-height:none;
+      padding:18px 0 6px;
+      border-bottom:1px solid var(--border);
+    }
+    nav.toc ul{display:flex; flex-wrap:wrap; gap:4px 14px;}
+    nav.toc a{padding:4px 0; border-left:none; border-bottom:2px solid transparent;}
+    nav.toc a.active{border-bottom-color:var(--gold);}
+  }
+
+  main{min-width:0; padding-top:0;}
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:96px 0 56px;
+    border-bottom:1px solid var(--border);
+  }
+  .hero .kicker{
+    font-family:var(--serif);
+    font-style:italic;
+    color:var(--teal-light);
+    font-size:15px;
+    margin:0 0 18px;
+  }
+  .hero h1{
+    font-family:var(--serif);
+    font-size:52px;
+    line-height:1.08;
+    margin:0 0 22px;
+    color:var(--paper);
+  }
+  .hero h1 em{
+    font-style:normal;
+    color:var(--gold);
+  }
+  .hero p.lede{
+    font-size:19px;
+    color:var(--paper-dim);
+    max-width:58ch;
+    margin:0 0 28px;
+  }
+  .hero .marquee{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:8px;
+  }
+  .marquee-bulb{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--gold);
+    opacity:.25;
+    animation:bulb 2.6s infinite ease-in-out;
+  }
+  @keyframes bulb{
+    0%,100%{opacity:.2;}
+    50%{opacity:1; box-shadow:0 0 8px var(--gold);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .marquee-bulb{animation:none; opacity:.7;}
+  }
+  .hero h1{ }
+  @media (max-width:600px){ .hero h1{font-size:36px;} .hero{padding-top:56px;} }
+
+  /* ---------- generic section ---------- */
+  section{
+    padding:72px 0;
+    border-bottom:1px solid var(--border);
+  }
+  section:last-of-type{border-bottom:none;}
+  .eyebrow{
+    font-family:var(--serif);
+    font-style:italic;
+    font-size:14px;
+    color:var(--teal-light);
+    margin:0 0 10px;
+  }
+  h2.section-title{
+    font-family:var(--serif);
+    font-size:34px;
+    margin:0 0 8px;
+    color:var(--paper);
+  }
+  .section-sub{color:var(--muted); font-size:16px; margin:0 0 36px; max-width:60ch;}
+  h3.block-title{
+    font-size:13px;
+    letter-spacing:.02em;
+    color:var(--gold);
+    margin:34px 0 10px;
+    font-weight:600;
+  }
+  p{color:var(--paper-dim); max-width:68ch;}
+  .prose p{margin:0 0 14px;}
+
+  /* ---------- concept map ---------- */
+  .map-wrap{
+    background:var(--ink-2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:20px;
+  }
+  .map-wrap svg{width:100%; height:auto; display:block;}
+  .map-node circle{
+    fill:var(--ink);
+    stroke:var(--border-strong);
+    stroke-width:1.5;
+    transition:stroke .2s, fill .2s;
+    cursor:pointer;
+  }
+  .map-node:hover circle, .map-node.hot circle{
+    stroke:var(--gold);
+    fill:var(--red-dim);
+  }
+  .map-node text{
+    fill:var(--paper-dim);
+    font-family:var(--sans);
+    font-size:12.5px;
+    pointer-events:none;
+  }
+  .map-node.hot text{fill:var(--paper);}
+  .map-center circle{fill:var(--red-dim); stroke:var(--gold); stroke-width:1.5;}
+  .map-center text{fill:var(--gold); font-family:var(--serif); font-style:italic; font-size:13px;}
+  .map-edge{stroke:var(--border-strong); stroke-width:1;}
+
+  /* ---------- callouts ---------- */
+  .callout{
+    border:1px solid var(--border-strong);
+    border-left:3px solid var(--teal-light);
+    background:var(--ink-2);
+    border-radius:4px;
+    padding:16px 18px;
+    margin:22px 0;
+    font-size:15px;
+    color:var(--paper-dim);
+  }
+  .callout.tip{border-left-color:var(--gold);}
+  .callout .callout-label{
+    display:block;
+    font-family:var(--serif);
+    font-style:italic;
+    color:var(--paper);
+    margin-bottom:6px;
+    font-size:15px;
+  }
+
+  /* ---------- code blocks ---------- */
+  .code-wrap{position:relative; margin:16px 0 22px;}
+  pre.code{
+    background:#0D0B09;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:18px 20px;
+    overflow-x:auto;
+    font-family:var(--mono);
+    font-size:13.5px;
+    line-height:1.65;
+    color:#E4DCC8;
+    margin:0;
+  }
+  pre.code .c-kw{color:var(--red);}
+  pre.code .c-fn{color:var(--teal-light);}
+  pre.code .c-str{color:var(--gold);}
+  pre.code .c-cm{color:var(--muted); font-style:italic;}
+  .copy-btn{
+    position:absolute;
+    top:10px; right:10px;
+    background:var(--ink-2);
+    border:1px solid var(--border-strong);
+    color:var(--paper-dim);
+    font-size:12px;
+    padding:5px 10px;
+    border-radius:4px;
+    cursor:pointer;
+  }
+  .copy-btn:hover{color:var(--paper); border-color:var(--gold);}
+
+  /* ---------- widget shell ---------- */
+  .widget{
+    background:var(--ink-2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:22px;
+    margin:16px 0 22px;
+  }
+  .widget-row{display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;}
+  .widget label{font-size:13px; color:var(--muted); display:block; margin-bottom:6px;}
+  select, input[type=range]{
+    accent-color: var(--gold);
+  }
+  select{
+    background:var(--ink);
+    color:var(--paper);
+    border:1px solid var(--border-strong);
+    border-radius:4px;
+    padding:8px 10px;
+    font-size:14px;
+    font-family:var(--sans);
+    max-width:100%;
+  }
+  button.action{
+    background:var(--red-dim);
+    color:var(--paper);
+    border:1px solid var(--red);
+    padding:9px 16px;
+    border-radius:4px;
+    font-size:14px;
+    cursor:pointer;
+  }
+  button.action:hover{background:var(--red);}
+  .metric-row{display:flex; gap:26px; flex-wrap:wrap; margin-top:14px;}
+  .metric{font-family:var(--mono); font-size:14px;}
+  .metric .m-label{color:var(--muted); font-size:12px; display:block; margin-bottom:2px; font-family:var(--sans);}
+  .metric .m-val{color:var(--gold); font-size:20px;}
+
+  svg text{user-select:none;}
+
+  /* ---------- pitfall / pro-tip ---------- */
+  .tag{
+    display:inline-block;
+    font-size:11px;
+    color:var(--ink);
+    background:var(--gold);
+    padding:2px 8px;
+    border-radius:3px;
+    margin-right:8px;
+    font-weight:600;
+  }
+
+  /* ---------- pipeline ---------- */
+  .pipeline-steps{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;}
+  .pipe-step-btn{
+    background:var(--ink);
+    border:1px solid var(--border-strong);
+    color:var(--paper-dim);
+    padding:9px 14px;
+    border-radius:20px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .pipe-step-btn.active{background:var(--teal); border-color:var(--teal-light); color:var(--paper);}
+  .pipe-desc{min-height:52px; color:var(--paper-dim); font-size:15px; margin-bottom:18px;}
+
+  /* leaderboard */
+  .board-row{
+    display:flex; align-items:center; gap:12px;
+    padding:8px 10px; border-bottom:1px solid var(--border);
+    font-size:14px;
+  }
+  .board-row.current{background:rgba(212,167,58,0.08);}
+  .board-rank{width:22px; color:var(--muted); font-family:var(--mono);}
+  .board-title{flex:1; color:var(--paper);}
+  .board-score{font-family:var(--mono); color:var(--gold); width:64px; text-align:right;}
+  .bar-track{flex-basis:100%; height:4px; background:var(--border); border-radius:2px; margin-top:4px;}
+  .bar-fill{height:100%; background:var(--teal-light); border-radius:2px;}
+
+  /* footer / takeaways */
+  .takeaway-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:24px 0;}
+  @media (max-width:600px){.takeaway-grid{grid-template-columns:1fr;}}
+  .takeaway-card{
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:16px 18px;
+    background:var(--ink-2);
+  }
+  .takeaway-card h4{margin:0 0 6px; color:var(--gold); font-family:var(--serif); font-weight:normal; font-size:17px;}
+  .takeaway-card p{margin:0; font-size:14.5px;}
+
+  footer{
+    padding:40px 0 10px;
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  .embed-toggle{
+    display:inline-flex;
+    border:1px solid var(--border-strong);
+    border-radius:20px;
+    overflow:hidden;
+    margin-bottom:18px;
+  }
+  .embed-toggle button{
+    background:var(--ink);
+    color:var(--paper-dim);
+    border:none;
+    padding:8px 16px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .embed-toggle button.active{background:var(--teal); color:var(--paper);}
+
+  .dot-grid{display:grid; gap:3px;}
+  .dot-grid div{width:6px; height:6px; border-radius:50%; background:var(--teal-light);}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <nav class="toc" id="toc">
+    <div class="toc-title">In this notebook</div>
+    <ul>
+      <li><a href="#hero" data-sec="hero">Start</a></li>
+      <li><a href="#map" data-sec="map">Concept map</a></li>
+      <li><a href="#vectors" data-sec="vectors">Vectors as meaning</a></li>
+      <li><a href="#cosine" data-sec="cosine">Cosine similarity</a></li>
+      <li><a href="#dotproduct" data-sec="dotproduct">Dot product</a></li>
+      <li><a href="#euclidean" data-sec="euclidean">Euclidean distance</a></li>
+      <li><a href="#ranking" data-sec="ranking">Ranking the catalog</a></li>
+      <li><a href="#embeddings" data-sec="embeddings">Real embeddings</a></li>
+      <li><a href="#pipeline" data-sec="pipeline">How it fits together</a></li>
+      <li><a href="#takeaways" data-sec="takeaways">Takeaways</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <!-- ============ HERO ============ -->
+    <section class="hero" id="hero" style="border-top:none;">
+      <p class="kicker">Project 7 · Smart Recommender Agent</p>
+      <h1>Recommending films with<br><em>nothing but arithmetic.</em></h1>
+      <p class="lede">This project ranks a 40-film Telugu, Kannada, and Tamil catalog by
+      turning every film into a row of six numbers, and comparing those numbers with
+      three classic similarity formulas — no language model involved. By the end of this
+      notebook you'll understand exactly how, and why the same math shows up again,
+      at much larger scale, inside real embedding-based search.</p>
+      <div class="marquee">
+        <div class="marquee-bulb" style="animation-delay:0s"></div>
+        <div class="marquee-bulb" style="animation-delay:.2s"></div>
+        <div class="marquee-bulb" style="animation-delay:.4s"></div>
+        <div class="marquee-bulb" style="animation-delay:.6s"></div>
+        <div class="marquee-bulb" style="animation-delay:.8s"></div>
+        <div class="marquee-bulb" style="animation-delay:1s"></div>
+      </div>
+    </section>
+
+    <!-- ============ CONCEPT MAP ============ -->
+    <section id="map">
+      <p class="eyebrow">Before you dive in</p>
+      <h2 class="section-title">The whole landscape, at a glance</h2>
+      <p class="section-sub">Six ideas make this app work. Click any node to jump to its section — come back here any time you lose your place.</p>
+      <div class="map-wrap">
+        <svg id="mapSvg" viewBox="0 0 640 420"></svg>
+      </div>
+    </section>
+
+    <!-- ============ 1. VECTORS ============ -->
+    <section id="vectors">
+      <p class="eyebrow">Concept 1</p>
+      <h2 class="section-title">Vectors as meaning</h2>
+      <p class="section-sub">Before anything can be "compared," it has to be turned into numbers.</p>
+
+      <div class="prose">
+        <p><strong style="color:var(--paper)">Plain-language explanation.</strong> A vector here is just a list of six numbers, one per genre — Action, Comedy, Romance, Thriller, Drama, Horror — each scored 0 to 5 for how strongly that film fits it. <em>RRR</em> becomes <code>[5, 1, 1, 3, 3, 0]</code>. That's it: a film has become a point in a 6-dimensional space.</p>
+        <p><strong style="color:var(--paper)">Real-life analogy.</strong> Think of a restaurant rating you'd give on five separate scales — spice, price, speed, portion size, ambience — instead of one star rating. Two restaurants with similar numbers across all five scales "feel" similar even if you've never described them in words. Genre vectors do the same job for films.</p>
+        <p><strong style="color:var(--paper)">Why it matters.</strong> Once meaning is a list of numbers, it can be measured, sorted, and searched with plain arithmetic — which is exactly what lets a computer "recommend" without understanding a single word of plot or dialogue.</p>
+      </div>
+
+      <h3 class="block-title">Try it — see a film's shape</h3>
+      <div class="widget">
+        <div class="widget-row">
+          <div>
+            <label for="radarSelect">Choose a film</label>
+            <select id="radarSelect"></select>
+          </div>
+        </div>
+        <svg id="radarSvg" viewBox="0 0 360 320" style="width:100%; max-width:420px; margin-top:18px; display:block;"></svg>
+      </div>
+
+      <h3 class="block-title">Worked code</h3>
+      <div class="code-wrap">
+        <button class="copy-btn" data-copy="code-vectors">Copy</button>
+        <pre class="code" id="code-vectors"><span class="c-cm"># Each film: title -> genre-strength vector (0-5 per genre)</span>
+GENRES = [<span class="c-str">"Action"</span>, <span class="c-str">"Comedy"</span>, <span class="c-str">"Romance"</span>, <span class="c-str">"Thriller"</span>, <span class="c-str">"Drama"</span>, <span class="c-str">"Horror"</span>]
+
+CATALOG = {
+    <span class="c-str">"RRR"</span>: {<span class="c-str">"language"</span>: <span class="c-str">"Telugu"</span>, <span class="c-str">"vector"</span>: [5, 1, 1, 3, 3, 0]},
+    <span class="c-str">"Sita Ramam"</span>: {<span class="c-str">"language"</span>: <span class="c-str">"Telugu"</span>, <span class="c-str">"vector"</span>: [1, 1, 5, 1, 4, 0]},
+    <span class="c-cm"># ...38 more films</span>
+}</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">Pro tip</span>
+        These six numbers were hand-picked by a human, which is exactly why this is a
+        <em>toy</em> version of an embedding. It's honest and readable — but it can only ever
+        capture what the six labels describe. Section 6 shows what changes at real scale.
+      </div>
+    </section>
+
+    <!-- ============ 2. COSINE ============ -->
+    <section id="cosine">
+      <p class="eyebrow">Concept 2</p>
+      <h2 class="section-title">Cosine similarity</h2>
+      <p class="section-sub">Measuring the angle between two vectors, ignoring how long they are.</p>
+
+      <div class="prose">
+        <p><strong style="color:var(--paper)">Plain-language explanation.</strong> Cosine similarity asks: do these two vectors point in the <em>same direction</em>? It's computed as the dot product divided by the product of the two vectors' lengths — which cancels out length entirely and leaves only the angle.</p>
+        <p><strong style="color:var(--paper)">Real-life analogy.</strong> Picture two people describing a movie's genre balance as a pie chart. One says "70% action, 30% drama," the other says "the same 70/30 split, but I only rated the top three genres out of five." Their proportions agree even though their raw numbers don't — cosine similarity is built to spot that agreement.</p>
+        <p><strong style="color:var(--paper)">Why it matters.</strong> A short, punchy plot summary and a long, detailed one can still describe the "same kind" of film. Cosine similarity lets a system say they're alike without being thrown off by one being a bigger vector than the other.</p>
+      </div>
+
+      <h3 class="block-title">The formula, step by step</h3>
+      <div class="widget" id="cosFormula">
+        <div class="pipeline-steps" id="cosFormulaSteps"></div>
+        <div class="pipe-desc" id="cosFormulaDesc"></div>
+      </div>
+
+      <h3 class="block-title">Try it — drag the vectors</h3>
+      <div class="widget">
+        <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Two simplified 2-genre vectors (Action, Romance). Drag the gold and teal handles and watch the angle — and the cosine score — respond.</p>
+        <svg id="cosSvg" viewBox="0 0 320 320" style="width:100%; max-width:340px; display:block;"></svg>
+        <div class="metric-row">
+          <div class="metric"><span class="m-label">Angle</span><span class="m-val" id="cosAngleVal">–</span></div>
+          <div class="metric"><span class="m-label">cos(θ) similarity</span><span class="m-val" id="cosVal">–</span></div>
+        </div>
+      </div>
+
+      <h3 class="block-title">Worked code</h3>
+      <div class="code-wrap">
+        <button class="copy-btn" data-copy="code-cosine">Copy</button>
+        <pre class="code" id="code-cosine"><span class="c-kw">def</span> <span class="c-fn">cosine_similarity</span>(u, v):
+    <span class="c-cm"># cos(theta) = dot(u, v) / (norm(u) * norm(v))</span>
+    dot = np.dot(u, v)
+    norm_u = np.linalg.norm(u)
+    norm_v = np.linalg.norm(v)
+    <span class="c-kw">if</span> norm_u == 0 <span class="c-kw">or</span> norm_v == 0:
+        <span class="c-kw">return</span> 0.0
+    <span class="c-kw">return</span> dot / (norm_u * norm_v)</pre>
+      </div>
+
+      <div class="callout">
+        <span class="callout-label">Pitfall</span>
+        Cosine similarity ranges from -1 to 1, but genre scores here are never negative, so
+        in this app it only ever lands between 0 and 1. Don't assume that range holds for
+        every embedding — real ones can and do produce negative similarities.
+      </div>
+    </section>
+
+    <!-- ============ 3. DOT PRODUCT ============ -->
+    <section id="dotproduct">
+      <p class="eyebrow">Concept 3</p>
+      <h2 class="section-title">Dot product</h2>
+      <p class="section-sub">The same handshake as cosine similarity, minus the part that cancels out length.</p>
+
+      <div class="prose">
+        <p><strong style="color:var(--paper)">Plain-language explanation.</strong> The dot product multiplies each matching pair of numbers and adds up the results. Unlike cosine similarity, it never divides by length — so a vector with big numbers across the board will naturally score higher, even against the same direction.</p>
+        <p><strong style="color:var(--paper)">Real-life analogy.</strong> Imagine rating "enthusiasm" instead of "proportion." A reviewer who rates everything 5/5 across the board will produce a bigger dot product with anyone else's high ratings than a reviewer who rates everything 1/5, even if both reviewers agree on which genres matter most.</p>
+        <p><strong style="color:var(--paper)">Why it matters.</strong> Some recommendation systems <em>want</em> that magnitude sensitivity — a film that's a strong 5/5 action epic should arguably outrank a mild 2/5 action film when someone wants "more action," and dot product is the tool that keeps magnitude in the picture.</p>
+      </div>
+
+      <h3 class="block-title">Try it — same angle, different length</h3>
+      <div class="widget">
+        <p style="color:var(--muted); font-size:13.5px; margin:0 0 14px;">Same draggable vectors as before, now with magnitude sliders. Keep the angle fixed and stretch one vector — cosine barely moves, but dot product climbs.</p>
+        <svg id="dotSvg" viewBox="0 0 320 320" style="width:100%; max-width:340px; display:block;"></svg>
+        <div class="widget-row" style="margin-top:10px;">
+          <div>
+            <label for="dotMagA">Gold vector length</label>
+            <input type="range" id="dotMagA" min="0.3" max="1.8" step="0.05" value="1">
+          </div>
+          <div>
+            <label for="dotMagB">Teal vector length</label>
+            <input type="range" id="dotMagB" min="0.3" max="1.8" step="0.05" value="1">
+          </div>
+        </div>
+        <div class="metric-row">
+          <div class="metric"><span class="m-label">cos(θ) similarity</span><span class="m-val" id="dotCosVal">–</span></div>
+          <div class="metric"><span class="m-label">Dot product</span><span class="m-val" id="dotVal">–</span></div>
+        </div>
+      </div>
+
+      <h3 class="block-title">Worked code</h3>
+      <div class="code-wrap">
+        <button class="copy-btn" data-copy="code-dot">Copy</button>
+        <pre class="code" id="code-dot"><span class="c-kw">def</span> <span class="c-fn">dot_product</span>(u, v):
+    <span class="c-kw">return</span> <span class="c-fn">float</span>(np.dot(u, v))</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">Pro tip</span>
+        The app ranks by cosine similarity, not dot product — a deliberate choice, so
+        that a film rated conservatively across genres isn't penalized against one
+        rated enthusiastically. If you ever see odd rankings in a similarity system,
+        check which of these two metrics is actually driving the sort.
+      </div>
+    </section>
+
+    <!-- ============ 4. EUCLIDEAN ============ -->
+    <section id="euclidean">
+      <p class="eyebrow">Concept 4</p>
+      <h2 class="section-title">Euclidean distance</h2>
+      <p class="section-sub">Forget angles — just measure the straight line between two points.</p>
+
+      <div class="prose">
+        <p><strong style="color:var(--paper)">Plain-language explanation.</strong> If you plot two films as points in genre-space, Euclidean distance is the length of the straight line connecting them — the same Pythagorean idea you'd use to measure distance on a map, just extended to six dimensions instead of two. Lower distance means the films sit closer together.</p>
+        <p><strong style="color:var(--paper)">Real-life analogy.</strong> Two houses can be "close" by straight-line distance even if no road connects them directly. Euclidean distance in genre-space works the same way — it doesn't care about direction, only how far apart two points actually sit.</p>
+        <p><strong style="color:var(--paper)">Why it matters.</strong> Distance-based search is the backbone of nearest-neighbor lookups in many real systems — it's often faster to compute at scale than cosine similarity, which is why it's worth knowing both.</p>
+      </div>
+
+      <h3 class="block-title">Try it — plot two genre axes</h3>
+      <div class="widget">
+        <div class="widget-row">
+          <div>
+            <label for="eucAxisX">Horizontal axis</label>
+            <select id="eucAxisX"></select>
+          </div>
+          <div>
+            <label for="eucAxisY">Vertical axis</label>
+            <select id="eucAxisY"></select>
+          </div>
+        </div>
+        <div class="widget-row" style="margin-top:14px;">
+          <div>
+            <label for="eucFilmA">Film A</label>
+            <select id="eucFilmA"></select>
+          </div>
+          <div>
+            <label for="eucFilmB">Film B</label>
+            <select id="eucFilmB"></select>
+          </div>
+        </div>
+        <svg id="eucSvg" viewBox="0 0 360 360" style="width:100%; max-width:420px; margin-top:18px; display:block;"></svg>
+        <div class="metric-row">
+          <div class="metric"><span class="m-label">Euclidean distance (all 6 genres)</span><span class="m-val" id="eucVal">–</span></div>
+        </div>
+      </div>
+
+      <h3 class="block-title">Worked code</h3>
+      <div class="code-wrap">
+        <button class="copy-btn" data-copy="code-euc">Copy</button>
+        <pre class="code" id="code-euc"><span class="c-kw">def</span> <span class="c-fn">euclidean_distance</span>(u, v):
+    <span class="c-kw">return</span> <span class="c-fn">float</span>(np.linalg.norm(u - v))</pre>
+      </div>
+
+      <div class="callout">
+        <span class="callout-label">Pitfall</span>
+        The scatter above only shows two genres at a time, but the distance number is
+        computed across all six — two films can look far apart on this one plot and
+        still be genuinely close once every dimension is counted.
+      </div>
+    </section>
+
+    <!-- ============ 5. RANKING ============ -->
+    <section id="ranking">
+      <p class="eyebrow">Concept 5</p>
+      <h2 class="section-title">Ranking the whole catalog</h2>
+      <p class="section-sub">This is the actual algorithm behind the "Find Similar Films" button.</p>
+
+      <div class="prose">
+        <p><strong style="color:var(--paper)">Plain-language explanation.</strong> Pick one film as the "query." Loop over every other film in the catalog, compute its cosine similarity to the query, and keep a running leaderboard. Once every film has been checked, sort the leaderboard from most to least similar and keep the top few.</p>
+        <p><strong style="color:var(--paper)">Real-life analogy.</strong> It's like asking a friend "which of these 39 other films is most like the one I just watched?" and having them hold each one up for comparison, one at a time, before finally announcing their ranked shortlist.</p>
+        <p><strong style="color:var(--paper)">Why it matters.</strong> This "compare against everything, then sort" pattern is the essence of nearest-neighbor search — the exact same shape of algorithm search engines and recommendation systems run, just against millions of vectors instead of 39.</p>
+      </div>
+
+      <h3 class="block-title">Try it — watch the comparisons happen</h3>
+      <div class="widget">
+        <div class="widget-row">
+          <div>
+            <label for="rankSelect">Query film</label>
+            <select id="rankSelect"></select>
+          </div>
+          <div style="align-self:flex-end;">
+            <button class="action" id="rankRun">Run ranking</button>
+          </div>
+        </div>
+        <p id="rankStatus" style="color:var(--muted); font-size:13.5px; margin:14px 0 6px;">Comparing against every other film…</p>
+        <div id="rankBoard" style="margin-top:6px;"></div>
+      </div>
+
+      <h3 class="block-title">Worked code</h3>
+      <div class="code-wrap">
+        <button class="copy-btn" data-copy="code-rank">Copy</button>
+        <pre class="code" id="code-rank">results = []
+<span class="c-kw">for</span> title, info <span class="c-kw">in</span> CATALOG.items():
+    <span class="c-kw">if</span> title == selected_title:
+        <span class="c-kw">continue</span>
+    cos_sim = <span class="c-fn">cosine_similarity</span>(query_vector, candidate_vector)
+    results.append({<span class="c-str">"title"</span>: title, <span class="c-str">"cosine_similarity"</span>: cos_sim, ...})
+
+<span class="c-cm"># Rank by cosine similarity, highest first</span>
+results.sort(key=<span class="c-kw">lambda</span> r: r[<span class="c-str">"cosine_similarity"</span>], reverse=<span class="c-kw">True</span>)
+top_results = results[:top_n]</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">Pro tip</span>
+        Checking every single item is called a "brute-force" or "linear" scan — perfectly
+        fine for 39 films, computed in a blink. Real catalogs with millions of items use
+        smarter index structures to avoid this full scan, but the underlying comparison
+        math is identical to what you just watched run.
+      </div>
+    </section>
+
+    <!-- ============ 6. EMBEDDINGS BRIDGE ============ -->
+    <section id="embeddings">
+      <p class="eyebrow">Concept 6</p>
+      <h2 class="section-title">This is a toy embedding</h2>
+      <p class="section-sub">Zoom out from six hand-picked numbers to what a real model produces.</p>
+
+      <div class="prose">
+        <p><strong style="color:var(--paper)">Plain-language explanation.</strong> A genre vector here has six dimensions, and a human decided what each one means. A real embedding model reads a film's plot, reviews, or dialogue and produces a vector with hundreds of dimensions — often 768 or more — where no single dimension has a clean human label. The model learned the layout of that space from data, not from a genre chart.</p>
+        <p><strong style="color:var(--paper)">Why it matters.</strong> Every formula in this notebook — cosine similarity, dot product, Euclidean distance — applies unchanged to those 768-dimensional vectors. That's the whole trick: once "meaning" is numbers, the same three formulas power everything from this toy app to production-grade semantic search and retrieval-augmented generation (RAG).</p>
+      </div>
+
+      <div class="embed-toggle">
+        <button id="embedBtnToy" class="active">6 hand-picked numbers</button>
+        <button id="embedBtnReal">768 learned numbers</button>
+      </div>
+      <div class="widget">
+        <div id="embedVisual" style="min-height:140px; display:flex; align-items:center; justify-content:center;"></div>
+        <p id="embedCaption" style="color:var(--muted); font-size:13.5px; text-align:center; margin:14px 0 0;"></p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-label">Pitfall</span>
+        Don't assume more dimensions automatically means "better." It means the model can
+        represent finer shades of meaning — but it also means you can no longer point at
+        one number and say "that's how much romance this has." The interpretability of
+        this toy version is a genuine trade-off, not just a simplification for teaching.
+      </div>
+    </section>
+
+    <!-- ============ PIPELINE ============ -->
+    <section id="pipeline">
+      <p class="eyebrow">Putting it together</p>
+      <h2 class="section-title">How the whole app runs, one click</h2>
+      <p class="section-sub">Step through the exact sequence that fires when someone presses "Find Similar Films."</p>
+
+      <div class="widget">
+        <div class="pipeline-steps" id="pipeSteps"></div>
+        <div class="pipe-desc" id="pipeDesc"></div>
+        <svg id="pipeSvg" viewBox="0 0 680 200" style="width:100%; display:block;"></svg>
+      </div>
+    </section>
+
+    <!-- ============ TAKEAWAYS ============ -->
+    <section id="takeaways" style="border-bottom:none;">
+      <p class="eyebrow">Recap</p>
+      <h2 class="section-title">What you now understand</h2>
+      <div class="takeaway-grid">
+        <div class="takeaway-card">
+          <h4>Meaning becomes numbers</h4>
+          <p>Any item — a film, a sentence, an image — can be represented as a vector, and that single move is what makes mathematical comparison possible.</p>
+        </div>
+        <div class="takeaway-card">
+          <h4>Three lenses, one job</h4>
+          <p>Cosine similarity, dot product, and Euclidean distance each answer "how similar?" slightly differently — direction only, direction plus magnitude, or raw distance.</p>
+        </div>
+        <div class="takeaway-card">
+          <h4>Ranking is a scan and a sort</h4>
+          <p>Compare a query vector against every candidate, then sort by score. That two-step shape scales from 39 films to a billion-row search index.</p>
+        </div>
+        <div class="takeaway-card">
+          <h4>This is the engine inside RAG</h4>
+          <p>Swap hand-picked genre scores for a real embedding model's output, and you have the exact retrieval step that powers Project 16.</p>
+        </div>
+      </div>
+      <p style="margin-top:18px;">You built real intuition for vector similarity without a single line of machine learning code — which means the next time you see an embedding model, a vector database, or a RAG pipeline, you'll already know what's happening under the hood. That's a genuinely useful foundation to carry into bigger, LLM-powered projects.</p>
+    </section>
+
+    <footer>
+      Project 7 · Smart Recommender Agent · Telugu / Kannada / Tamil catalog · Learning notebook generated to accompany <code>app_p7.py</code>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+(function(){
+
+/* =========================================================
+   0. DATA — mirrors app_p7.py exactly
+========================================================= */
+const GENRES = ["Action","Comedy","Romance","Thriller","Drama","Horror"];
+
+const CATALOG = {
+  "Baahubali: The Beginning": {language:"Telugu", vector:[5,0,2,2,3,0]},
+  "RRR": {language:"Telugu", vector:[5,1,1,3,3,0]},
+  "Pushpa: The Rise": {language:"Telugu", vector:[5,1,2,3,2,0]},
+  "Arjun Reddy": {language:"Telugu", vector:[2,0,4,2,5,0]},
+  "Eega": {language:"Telugu", vector:[3,3,3,2,2,0]},
+  "Jersey": {language:"Telugu", vector:[1,1,2,1,5,0]},
+  "Ala Vaikunthapurramuloo": {language:"Telugu", vector:[3,4,3,1,3,0]},
+  "Sye": {language:"Telugu", vector:[4,2,1,2,2,0]},
+  "Sita Ramam": {language:"Telugu", vector:[1,1,5,1,4,0]},
+  "HIT: The First Case": {language:"Telugu", vector:[2,0,0,5,3,0]},
+  "Agent Sai Srinivasa Athreya": {language:"Telugu", vector:[1,4,0,4,2,0]},
+  "Anji": {language:"Telugu", vector:[4,1,1,3,2,2]},
+  "Arundhati": {language:"Telugu", vector:[3,0,1,4,3,5]},
+  "Magadheera": {language:"Telugu", vector:[5,1,4,2,3,0]},
+  "Mathu Vadalara": {language:"Telugu", vector:[1,5,0,4,1,0]},
+  "KGF: Chapter 1": {language:"Kannada", vector:[5,0,1,3,3,0]},
+  "KGF: Chapter 2": {language:"Kannada", vector:[5,0,1,4,3,0]},
+  "Kantara": {language:"Kannada", vector:[4,0,1,4,3,2]},
+  "Ugramm": {language:"Kannada", vector:[4,0,0,4,2,1]},
+  "Lucia": {language:"Kannada", vector:[1,1,2,5,3,1]},
+  "Rangitaranga": {language:"Kannada", vector:[1,0,2,5,3,1]},
+  "777 Charlie": {language:"Kannada", vector:[1,3,1,1,5,0]},
+  "Ulidavaru Kandanthe": {language:"Kannada", vector:[3,1,1,4,4,0]},
+  "Kirik Party": {language:"Kannada", vector:[1,5,3,0,3,0]},
+  "Mufti": {language:"Kannada", vector:[4,0,0,4,3,0]},
+  "6-5=2": {language:"Kannada", vector:[0,0,0,4,1,5]},
+  "Dia": {language:"Kannada", vector:[0,1,5,1,5,0]},
+  "Love Mocktail": {language:"Kannada", vector:[0,4,5,0,3,0]},
+  "Vikram": {language:"Tamil", vector:[5,0,0,5,2,0]},
+  "Kaithi": {language:"Tamil", vector:[5,0,0,5,2,0]},
+  "Master": {language:"Tamil", vector:[4,2,0,3,3,0]},
+  "96": {language:"Tamil", vector:[0,1,5,0,4,0]},
+  "Soorarai Pottru": {language:"Tamil", vector:[1,1,2,2,5,0]},
+  "Jai Bhim": {language:"Tamil", vector:[1,0,0,3,5,0]},
+  "Ratsasan": {language:"Tamil", vector:[2,0,0,5,3,2]},
+  "Pizzas": {language:"Tamil", vector:[1,1,1,4,2,5]},
+  "Super Deluxe": {language:"Tamil", vector:[2,3,1,4,4,0]},
+  "Asuran": {language:"Tamil", vector:[4,0,1,3,5,0]},
+  "Thani Oruvan": {language:"Tamil", vector:[4,1,1,5,3,0]},
+  "Love Today": {language:"Tamil", vector:[1,5,4,1,2,0]},
+};
+const TITLES = Object.keys(CATALOG).sort();
+
+/* =========================================================
+   1. MATH HELPERS
+========================================================= */
+function dot(u,v){ let s=0; for(let i=0;i<u.length;i++) s+=u[i]*v[i]; return s; }
+function norm(u){ return Math.sqrt(dot(u,u)); }
+function cosineSim(u,v){
+  const nu=norm(u), nv=norm(v);
+  if(nu===0||nv===0) return 0;
+  return dot(u,v)/(nu*nv);
+}
+function euclidean(u,v){
+  let s=0; for(let i=0;i<u.length;i++){ const d=u[i]-v[i]; s+=d*d; }
+  return Math.sqrt(s);
+}
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs){
+  const e = document.createElementNS(svgns, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+/* =========================================================
+   2. SCROLLSPY NAV
+========================================================= */
+const sections = ["hero","map","vectors","cosine","dotproduct","euclidean","ranking","embeddings","pipeline","takeaways"];
+const navLinks = {};
+document.querySelectorAll('#toc a').forEach(a=>{ navLinks[a.dataset.sec]=a; });
+function onScroll(){
+  let current = sections[0];
+  for(const id of sections){
+    const node = document.getElementById(id);
+    if(node && node.getBoundingClientRect().top < 140) current = id;
+  }
+  for(const id in navLinks) navLinks[id].classList.toggle('active', id===current);
+}
+document.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+
+/* =========================================================
+   3. COPY BUTTONS
+========================================================= */
+document.querySelectorAll('.copy-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const code = document.getElementById(btn.dataset.copy);
+    const text = code.innerText;
+    navigator.clipboard.writeText(text).then(()=>{
+      const old = btn.textContent;
+      btn.textContent = "Copied";
+      setTimeout(()=>{ btn.textContent = old; }, 1400);
+    }).catch(()=>{ btn.textContent = "Select & copy manually"; });
+  });
+});
+
+/* =========================================================
+   4. CONCEPT MAP (SVG network)
+========================================================= */
+(function buildMap(){
+  const svg = document.getElementById('mapSvg');
+  const cx=320, cy=210, r=150;
+  const nodes = [
+    {id:"vectors", label:"Vectors as", label2:"meaning"},
+    {id:"cosine", label:"Cosine", label2:"similarity"},
+    {id:"dotproduct", label:"Dot", label2:"product"},
+    {id:"euclidean", label:"Euclidean", label2:"distance"},
+    {id:"ranking", label:"Ranking the", label2:"catalog"},
+    {id:"embeddings", label:"Real", label2:"embeddings"},
+  ];
+  const center = {x:cx, y:cy};
+  svg.appendChild(el('circle',{cx:center.x,cy:center.y,r:2})); // noop anchor
+  nodes.forEach((n,i)=>{
+    const angle = (Math.PI*2/nodes.length)*i - Math.PI/2;
+    n.x = cx + r*Math.cos(angle);
+    n.y = cy + r*Math.sin(angle);
+  });
+  // edges
+  nodes.forEach(n=>{
+    svg.appendChild(el('line',{class:'map-edge', x1:cx, y1:cy, x2:n.x, y2:n.y}));
+  });
+  // center node
+  const cg = el('g', {class:'map-node map-center'});
+  cg.appendChild(el('circle',{cx:cx, cy:cy, r:46}));
+  const ct = el('text', {x:cx, y:cy-2, 'text-anchor':'middle'});
+  ct.textContent = "Recommender";
+  cg.appendChild(ct);
+  const ct2 = el('text', {x:cx, y:cy+14, 'text-anchor':'middle'});
+  ct2.textContent = "Agent";
+  cg.appendChild(ct2);
+  svg.appendChild(cg);
+  // outer nodes
+  nodes.forEach(n=>{
+    const g = el('g', {class:'map-node'});
+    g.appendChild(el('circle',{cx:n.x, cy:n.y, r:40}));
+    const t1 = el('text', {x:n.x, y:n.y-2, 'text-anchor':'middle'});
+    t1.textContent = n.label;
+    g.appendChild(t1);
+    const t2 = el('text', {x:n.x, y:n.y+14, 'text-anchor':'middle'});
+    t2.textContent = n.label2;
+    g.appendChild(t2);
+    g.style.cursor='pointer';
+    g.addEventListener('click', ()=>{
+      document.getElementById(n.id).scrollIntoView({behavior:'smooth'});
+    });
+    g.addEventListener('mouseenter', ()=>g.classList.add('hot'));
+    g.addEventListener('mouseleave', ()=>g.classList.remove('hot'));
+    svg.appendChild(g);
+  });
+})();
+
+/* =========================================================
+   5. RADAR CHART (Concept 1)
+========================================================= */
+const radarSelect = document.getElementById('radarSelect');
+TITLES.forEach(t=>{
+  const o = document.createElement('option'); o.value=t; o.textContent = `${t} (${CATALOG[t].language})`;
+  radarSelect.appendChild(o);
+});
+radarSelect.value = "RRR";
+
+function drawRadar(title){
+  const svg = document.getElementById('radarSvg');
+  svg.innerHTML = "";
+  const cx=180, cy=150, R=110;
+  const n = GENRES.length;
+  const vec = CATALOG[title].vector;
+  const maxV = 5;
+
+  // grid rings
+  for(let ring=1; ring<=5; ring++){
+    const pts = [];
+    for(let i=0;i<n;i++){
+      const a = (Math.PI*2/n)*i - Math.PI/2;
+      const rr = R*ring/5;
+      pts.push(`${cx+rr*Math.cos(a)},${cy+rr*Math.sin(a)}`);
+    }
+    svg.appendChild(el('polygon', {points:pts.join(' '), fill:'none', stroke:'rgba(237,230,214,0.10)', 'stroke-width':1}));
+  }
+  // axes + labels
+  for(let i=0;i<n;i++){
+    const a = (Math.PI*2/n)*i - Math.PI/2;
+    const x2 = cx+R*Math.cos(a), y2 = cy+R*Math.sin(a);
+    svg.appendChild(el('line', {x1:cx,y1:cy,x2,y2, stroke:'rgba(237,230,214,0.18)', 'stroke-width':1}));
+    const lx = cx+(R+22)*Math.cos(a), ly = cy+(R+22)*Math.sin(a);
+    const t = el('text', {x:lx, y:ly, 'text-anchor':'middle', fill:'#C9BFAE', 'font-size':'11px', 'font-family':'sans-serif'});
+    t.textContent = GENRES[i];
+    svg.appendChild(t);
+  }
+  // data polygon
+  const dpts = [];
+  for(let i=0;i<n;i++){
+    const a = (Math.PI*2/n)*i - Math.PI/2;
+    const rr = R*(vec[i]/maxV);
+    dpts.push(`${cx+rr*Math.cos(a)},${cy+rr*Math.sin(a)}`);
+  }
+  svg.appendChild(el('polygon', {points:dpts.join(' '), fill:'rgba(212,167,58,0.28)', stroke:'#D4A73A', 'stroke-width':2}));
+  dpts.forEach(p=>{
+    const [x,y] = p.split(',').map(Number);
+    svg.appendChild(el('circle', {cx:x, cy:y, r:3.5, fill:'#D4A73A'}));
+  });
+}
+radarSelect.addEventListener('change', ()=>drawRadar(radarSelect.value));
+drawRadar("RRR");
+
+/* =========================================================
+   6. SHARED 2-VECTOR "LAB" WIDGET (cosine + dot sections)
+   Axes: x = Action (0-5), y = Romance (0-5)
+========================================================= */
+function makeVectorLab(svgId, opts){
+  const svg = document.getElementById(svgId);
+  const pad = 40, size = 320 - pad*2;
+  const originX = pad, originY = 320 - pad;
+  const scale = size/5; // 5 = max genre value
+
+  let vecA = {x:4, y:1}; // gold
+  let vecB = {x:1, y:4}; // teal
+  let magA = 1, magB = 1;
+
+  function toScreen(pt){
+    return {x: originX + pt.x*scale, y: originY - pt.y*scale};
+  }
+  function toData(sx, sy){
+    let x = (sx-originX)/scale, y=(originY-sy)/scale;
+    x = Math.max(0, Math.min(5, x));
+    y = Math.max(0, Math.min(5, y));
+    return {x,y};
+  }
+
+  function effA(){ return {x: vecA.x*magA, y: vecA.y*magA}; }
+  function effB(){ return {x: vecB.x*magB, y: vecB.y*magB}; }
+
+  function render(){
+    svg.innerHTML = "";
+    // axes
+    svg.appendChild(el('line',{x1:originX,y1:originY,x2:originX+size,y2:originY, stroke:'rgba(237,230,214,0.25)','stroke-width':1}));
+    svg.appendChild(el('line',{x1:originX,y1:originY,x2:originX,y2:originY-size, stroke:'rgba(237,230,214,0.25)','stroke-width':1}));
+    const lx = el('text',{x:originX+size, y:originY+16, 'text-anchor':'end','font-size':'11px', fill:'#9C9186'}); lx.textContent='Action'; svg.appendChild(lx);
+    const ly = el('text',{x:originX-6, y:originY-size, 'text-anchor':'end','font-size':'11px', fill:'#9C9186'}); ly.textContent='Romance'; svg.appendChild(ly);
+
+    const a = effA(), b = effB();
+    const sa = toScreen(a), sb = toScreen(b);
+    const so = toScreen({x:0,y:0});
+
+    // arc between vectors (angle)
+    if(opts.showAngle){
+      const angA = Math.atan2(-(sa.y-so.y), sa.x-so.x);
+      const angB = Math.atan2(-(sb.y-so.y), sb.x-so.x);
+      const arcR = 30;
+      const x1 = so.x + arcR*Math.cos(angA), y1 = so.y - arcR*Math.sin(angA);
+      const x2 = so.x + arcR*Math.cos(angB), y2 = so.y - arcR*Math.sin(angB);
+      let diff = angA-angB;
+      const largeArc = Math.abs(diff) > Math.PI ? 1 : 0;
+      const sweep = diff > 0 ? 1 : 0;
+      svg.appendChild(el('path',{d:`M ${x1} ${y1} A ${arcR} ${arcR} 0 ${largeArc} ${sweep} ${x2} ${y2}`, fill:'none', stroke:'#4C8783','stroke-width':1.5}));
+    }
+
+    // vector A (gold)
+    svg.appendChild(el('line',{x1:so.x,y1:so.y,x2:sa.x,y2:sa.y, stroke:'#D4A73A','stroke-width':3}));
+    const hA = el('circle',{cx:sa.x, cy:sa.y, r:9, fill:'#D4A73A', style:'cursor:grab'});
+    svg.appendChild(hA);
+    // vector B (teal)
+    svg.appendChild(el('line',{x1:so.x,y1:so.y,x2:sb.x,y2:sb.y, stroke:'#4C8783','stroke-width':3}));
+    const hB = el('circle',{cx:sb.x, cy:sb.y, r:9, fill:'#4C8783', style:'cursor:grab'});
+    svg.appendChild(hB);
+
+    // dragging (only base direction handles are draggable, magnitude is via slider if provided)
+    function dragHandler(handleGetter, handleSetter){
+      return function(handleEl){
+        handleEl.addEventListener('pointerdown', (e)=>{
+          handleEl.setPointerCapture(e.pointerId);
+          function move(ev){
+            const rect = svg.getBoundingClientRect();
+            const scaleX = 320/rect.width, scaleY = 320/rect.height;
+            const sx = (ev.clientX-rect.left)*scaleX, sy=(ev.clientY-rect.top)*scaleY;
+            const d = toData(sx, sy);
+            handleSetter(d);
+            render();
+            updateMetrics();
+          }
+          function up(){
+            handleEl.removeEventListener('pointermove', move);
+            handleEl.removeEventListener('pointerup', up);
+          }
+          handleEl.addEventListener('pointermove', move);
+          handleEl.addEventListener('pointerup', up);
+        });
+      };
+    }
+    dragHandler(null, (d)=>{ vecA = {x:d.x/ (magA||1), y:d.y/(magA||1)}; })(hA);
+    dragHandler(null, (d)=>{ vecB = {x:d.x/ (magB||1), y:d.y/(magB||1)}; })(hB);
+  }
+
+  function updateMetrics(){
+    const a = [effA().x, effA().y], b=[effB().x, effB().y];
+    const cos = cosineSim(a,b);
+    const angleDeg = Math.acos(Math.max(-1,Math.min(1,cos))) * 180/Math.PI;
+    if(opts.onUpdate) opts.onUpdate({cos, dotVal: dot(a,b), angleDeg});
+  }
+
+  render();
+  updateMetrics();
+
+  return {
+    setMagA(v){ magA=v; render(); updateMetrics(); },
+    setMagB(v){ magB=v; render(); updateMetrics(); },
+  };
+}
+
+/* Cosine section instance */
+const cosLab = makeVectorLab('cosSvg', {
+  showAngle:true,
+  onUpdate({cos, angleDeg}){
+    document.getElementById('cosAngleVal').textContent = angleDeg.toFixed(1)+"°";
+    document.getElementById('cosVal').textContent = cos.toFixed(3);
+  }
+});
+
+/* Dot product section instance */
+const dotLab = makeVectorLab('dotSvg', {
+  showAngle:true,
+  onUpdate({cos, dotVal}){
+    document.getElementById('dotCosVal').textContent = cos.toFixed(3);
+    document.getElementById('dotVal').textContent = dotVal.toFixed(2);
+  }
+});
+document.getElementById('dotMagA').addEventListener('input', (e)=>dotLab.setMagA(parseFloat(e.target.value)));
+document.getElementById('dotMagB').addEventListener('input', (e)=>dotLab.setMagB(parseFloat(e.target.value)));
+
+/* Cosine formula step-through */
+(function(){
+  const steps = [
+    {label:"1. Dot product", desc:"Multiply each matching genre score between the two films and add them up: dot(u, v)."},
+    {label:"2. Length of u", desc:"Find the length of the first vector: the square root of the sum of its squares, norm(u)."},
+    {label:"3. Length of v", desc:"Do the same for the second vector: norm(v)."},
+    {label:"4. Divide", desc:"cos(θ) = dot(u, v) / (norm(u) × norm(v)) — this division is what cancels out magnitude and leaves only direction."},
+  ];
+  const wrap = document.getElementById('cosFormulaSteps');
+  const desc = document.getElementById('cosFormulaDesc');
+  steps.forEach((s,i)=>{
+    const b = document.createElement('button');
+    b.className = 'pipe-step-btn' + (i===0?' active':'');
+    b.textContent = s.label;
+    b.addEventListener('click', ()=>{
+      wrap.querySelectorAll('.pipe-step-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      desc.textContent = s.desc;
+    });
+    wrap.appendChild(b);
+  });
+  desc.textContent = steps[0].desc;
+})();
+
+/* =========================================================
+   7. EUCLIDEAN SCATTER (Concept 4)
+========================================================= */
+const eucAxisX = document.getElementById('eucAxisX');
+const eucAxisY = document.getElementById('eucAxisY');
+const eucFilmA = document.getElementById('eucFilmA');
+const eucFilmB = document.getElementById('eucFilmB');
+GENRES.forEach((g,i)=>{
+  const ox = document.createElement('option'); ox.value=i; ox.textContent=g; eucAxisX.appendChild(ox);
+  const oy = document.createElement('option'); oy.value=i; oy.textContent=g; eucAxisY.appendChild(oy.cloneNode(true));
+});
+eucAxisX.value = 0; // Action
+eucAxisY.value = 4; // Drama
+TITLES.forEach(t=>{
+  const oa = document.createElement('option'); oa.value=t; oa.textContent=t; eucFilmA.appendChild(oa);
+  const ob = document.createElement('option'); ob.value=t; ob.textContent=t; eucFilmB.appendChild(ob.cloneNode(true));
+});
+eucFilmA.value = "RRR";
+eucFilmB.value = "Kantara";
+
+function drawEuclidean(){
+  const svg = document.getElementById('eucSvg');
+  svg.innerHTML = "";
+  const gx = parseInt(eucAxisX.value), gy = parseInt(eucAxisY.value);
+  const filmA = eucFilmA.value, filmB = eucFilmB.value;
+  const pad=36, size=360-pad*2, scale=size/5;
+  const originX=pad, originY=360-pad;
+
+  svg.appendChild(el('line',{x1:originX,y1:originY,x2:originX+size,y2:originY, stroke:'rgba(237,230,214,0.25)'}));
+  svg.appendChild(el('line',{x1:originX,y1:originY,x2:originX,y2:originY-size, stroke:'rgba(237,230,214,0.25)'}));
+  const lx=el('text',{x:originX+size,y:originY+18,'text-anchor':'end','font-size':'11px',fill:'#9C9186'}); lx.textContent=GENRES[gx]; svg.appendChild(lx);
+  const ly=el('text',{x:originX-6,y:originY-size,'text-anchor':'end','font-size':'11px',fill:'#9C9186'}); ly.textContent=GENRES[gy]; svg.appendChild(ly);
+
+  function pos(title){
+    const v = CATALOG[title].vector;
+    return {x: originX + v[gx]*scale, y: originY - v[gy]*scale};
+  }
+  // all points (faint)
+  TITLES.forEach(t=>{
+    if(t===filmA||t===filmB) return;
+    const p = pos(t);
+    svg.appendChild(el('circle',{cx:p.x, cy:p.y, r:4, fill:'rgba(76,135,131,0.45)'}));
+  });
+  const pA = pos(filmA), pB = pos(filmB);
+  svg.appendChild(el('line',{x1:pA.x,y1:pA.y,x2:pB.x,y2:pB.y, stroke:'#A63D40','stroke-width':2, 'stroke-dasharray':'5,4'}));
+  svg.appendChild(el('circle',{cx:pA.x,cy:pA.y,r:7,fill:'#D4A73A'}));
+  svg.appendChild(el('circle',{cx:pB.x,cy:pB.y,r:7,fill:'#4C8783'}));
+  const ta = el('text',{x:pA.x+10,y:pA.y-8,'font-size':'11px',fill:'#EDE6D6'}); ta.textContent=filmA; svg.appendChild(ta);
+  const tb = el('text',{x:pB.x+10,y:pB.y+16,'font-size':'11px',fill:'#EDE6D6'}); tb.textContent=filmB; svg.appendChild(tb);
+
+  const dist = euclidean(CATALOG[filmA].vector, CATALOG[filmB].vector);
+  document.getElementById('eucVal').textContent = dist.toFixed(2);
+}
+[eucAxisX,eucAxisY,eucFilmA,eucFilmB].forEach(elm=>elm.addEventListener('change', drawEuclidean));
+drawEuclidean();
+
+/* =========================================================
+   8. RANKING STEP-THROUGH (Concept 5)
+========================================================= */
+const rankSelect = document.getElementById('rankSelect');
+TITLES.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; rankSelect.appendChild(o); });
+rankSelect.value = "RRR";
+
+let rankTimer = null;
+document.getElementById('rankRun').addEventListener('click', ()=>{
+  if(rankTimer) clearInterval(rankTimer);
+  const query = rankSelect.value;
+  const qVec = CATALOG[query].vector;
+  const candidates = TITLES.filter(t=>t!==query);
+  let idx = 0;
+  let leaderboard = [];
+  const status = document.getElementById('rankStatus');
+  const board = document.getElementById('rankBoard');
+  board.innerHTML = "";
+  status.textContent = `Comparing ${query} against every other film…`;
+
+  rankTimer = setInterval(()=>{
+    if(idx >= candidates.length){
+      clearInterval(rankTimer);
+      status.textContent = `Done — compared against all ${candidates.length} other films.`;
+      renderBoard(leaderboard.slice(0,5), null);
+      return;
+    }
+    const cand = candidates[idx];
+    const score = cosineSim(qVec, CATALOG[cand].vector);
+    leaderboard.push({title:cand, score});
+    leaderboard.sort((a,b)=>b.score-a.score);
+    status.textContent = `Checking "${cand}" (${idx+1}/${candidates.length})…`;
+    renderBoard(leaderboard.slice(0,5), cand);
+    idx++;
+  }, 90);
+});
+
+function renderBoard(list, currentTitle){
+  const board = document.getElementById('rankBoard');
+  board.innerHTML = "";
+  list.forEach((r,i)=>{
+    const row = document.createElement('div');
+    row.className = 'board-row' + (r.title===currentTitle ? ' current' : '');
+    const pct = Math.max(0, r.score) * 100;
+    row.innerHTML = `
+      <div class="board-rank">${i+1}</div>
+      <div class="board-title">${r.title} <span style="color:var(--muted); font-size:12px;">(${CATALOG[r.title].language})</span></div>
+      <div class="board-score">${(pct).toFixed(1)}%</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+    `;
+    board.appendChild(row);
+  });
+}
+renderBoard([], null);
+
+/* =========================================================
+   9. EMBEDDINGS BRIDGE TOGGLE (Concept 6)
+========================================================= */
+(function(){
+  const btnToy = document.getElementById('embedBtnToy');
+  const btnReal = document.getElementById('embedBtnReal');
+  const visual = document.getElementById('embedVisual');
+  const caption = document.getElementById('embedCaption');
+
+  function showToy(){
+    btnToy.classList.add('active'); btnReal.classList.remove('active');
+    visual.innerHTML = "";
+    const row = document.createElement('div');
+    row.style.display='flex'; row.style.gap='10px';
+    GENRES.forEach(()=>{
+      const dot = document.createElement('div');
+      dot.style.width='34px'; dot.style.height='34px'; dot.style.borderRadius='6px';
+      dot.style.background='#D4A73A'; dot.style.opacity = (0.35+Math.random()*0.6).toFixed(2);
+      row.appendChild(dot);
+    });
+    visual.appendChild(row);
+    caption.textContent = "Six numbers, each meaning exactly one labeled genre. Fully readable, fully hand-built.";
+  }
+  function showReal(){
+    btnReal.classList.add('active'); btnToy.classList.remove('active');
+    visual.innerHTML = "";
+    const grid = document.createElement('div');
+    grid.className='dot-grid';
+    grid.style.gridTemplateColumns = 'repeat(32, 6px)';
+    for(let i=0;i<768;i++){
+      const d = document.createElement('div');
+      d.style.opacity = (0.15+Math.random()*0.85).toFixed(2);
+      grid.appendChild(d);
+    }
+    visual.appendChild(grid);
+    caption.textContent = "768 numbers, learned from data. No single one has a human-readable label — meaning is spread across the whole vector.";
+  }
+  btnToy.addEventListener('click', showToy);
+  btnReal.addEventListener('click', showReal);
+  showToy();
+})();
+
+/* =========================================================
+   10. PIPELINE STEP-THROUGH
+========================================================= */
+(function(){
+  const steps = [
+    {label:"1. Pick a film", desc:"The user selects one catalog title — this becomes the query vector, e.g. RRR → [5, 1, 1, 3, 3, 0]."},
+    {label:"2. Loop the catalog", desc:"The app iterates over every other film in the dictionary, skipping the query itself and any film outside the language filter."},
+    {label:"3. Score each pair", desc:"For every candidate, it computes cosine similarity, dot product, and Euclidean distance against the query vector, all in the same pass."},
+    {label:"4. Sort by cosine", desc:"The full results list is sorted descending by cosine similarity — the metric the app trusts most for ranking."},
+    {label:"5. Show top N", desc:"The first N results (chosen by the slider) are rendered as recommendation cards, with the full comparison table available underneath."},
+  ];
+  const wrap = document.getElementById('pipeSteps');
+  const desc = document.getElementById('pipeDesc');
+  const svg = document.getElementById('pipeSvg');
+
+  function drawStage(activeIdx){
+    svg.innerHTML = "";
+    const n = steps.length;
+    const boxW = 118, boxH = 64, gap = (680 - n*boxW)/(n+1);
+    for(let i=0;i<n;i++){
+      const x = gap + i*(boxW+gap);
+      const y = 68;
+      const active = i===activeIdx;
+      svg.appendChild(el('rect',{x, y, width:boxW, height:boxH, rx:6,
+        fill: active? 'rgba(166,61,64,0.28)':'#1B1714',
+        stroke: active? '#D4A73A':'rgba(237,230,214,0.2)', 'stroke-width': active?2:1}));
+      const label = steps[i].label.replace(/^\d+\.\s*/,'');
+      const words = label.split(' ');
+      const line1 = words.slice(0, Math.ceil(words.length/2)).join(' ');
+      const line2 = words.slice(Math.ceil(words.length/2)).join(' ');
+      const t1 = el('text',{x:x+boxW/2, y:y+boxH/2-4, 'text-anchor':'middle','font-size':'11.5px', fill: active? '#EDE6D6':'#9C9186'});
+      t1.textContent = line1; svg.appendChild(t1);
+      const t2 = el('text',{x:x+boxW/2, y:y+boxH/2+12, 'text-anchor':'middle','font-size':'11.5px', fill: active? '#EDE6D6':'#9C9186'});
+      t2.textContent = line2; svg.appendChild(t2);
+      if(i<n-1){
+        svg.appendChild(el('line',{x1:x+boxW, y1:y+boxH/2, x2:x+boxW+gap, y2:y+boxH/2, stroke:'rgba(237,230,214,0.3)','stroke-width':1.5}));
+      }
+    }
+  }
+
+  steps.forEach((s,i)=>{
+    const b = document.createElement('button');
+    b.className = 'pipe-step-btn' + (i===0?' active':'');
+    b.textContent = s.label;
+    b.addEventListener('click', ()=>{
+      wrap.querySelectorAll('.pipe-step-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      desc.textContent = s.desc;
+      drawStage(i);
+    });
+    wrap.appendChild(b);
+  });
+  desc.textContent = steps[0].desc;
+  drawStage(0);
+})();
+
+})();
+</script>
+</body>
+</html>
