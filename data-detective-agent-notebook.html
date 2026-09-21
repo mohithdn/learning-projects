@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Detective Agent — Interactive Learning Notebook</title>
+<style>
+  :root{
+    --ink:#10161a;
+    --ink-2:#161f24;
+    --ink-3:#1d2830;
+    --line:#2a3740;
+    --paper:#eef2f0;
+    --paper-dim:#aebcc2;
+    --paper-faint:#7c8b92;
+    --blue:#6fa8d8;
+    --blue-dim:#3f5b73;
+    --gold:#e7b855;
+    --gold-dim:#7a6534;
+    --coral:#e08672;
+    --coral-dim:#6e4038;
+    --green:#7fbf8f;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", "Menlo", monospace;
+    --sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --maxw: 700px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:24px;}
+  body{margin:0; background:var(--ink); color:var(--paper); font-family:var(--sans); line-height:1.6; -webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--gold-dim); color:var(--paper);}
+  a{color:var(--blue);}
+
+  .shell{display:grid; grid-template-columns: 220px 1fr; max-width:1180px; margin:0 auto;}
+  @media (max-width:900px){.shell{grid-template-columns: 1fr;} nav.toc{display:none;}}
+
+  nav.toc{position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto; padding:32px 12px 32px 24px; font-size:13px; border-right:1px solid var(--line);}
+  nav.toc .toc-label{color:var(--paper-faint); font-size:11px; letter-spacing:0.02em; margin-bottom:14px;}
+  nav.toc ol{list-style:none; margin:0; padding:0;}
+  nav.toc li{margin-bottom:2px;}
+  nav.toc a{display:block; color:var(--paper-dim); text-decoration:none; padding:6px 10px; border-radius:6px; border-left:2px solid transparent; transition:color .15s, border-color .15s, background .15s;}
+  nav.toc a:hover{color:var(--paper); background:var(--ink-2);}
+  nav.toc a.active{color:var(--gold); border-left-color:var(--gold); background:var(--ink-2);}
+  nav.toc .toc-divider{height:1px; background:var(--line); margin:14px 4px;}
+
+  main{padding:0 24px 120px;}
+
+  .hero{padding:72px 0 56px; max-width:var(--maxw); margin:0 auto;}
+  .hero-kicker{font-family:var(--mono); font-size:13px; color:var(--gold); margin-bottom:18px; display:flex; align-items:center; gap:10px;}
+  .hero-kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--gold); box-shadow:0 0 0 3px var(--gold-dim);}
+  .hero h1{font-size:clamp(32px,5vw,46px); line-height:1.08; margin:0 0 20px; letter-spacing:-0.01em; font-weight:650;}
+  .hero p.lede{font-size:18px; color:var(--paper-dim); max-width:56ch; margin:0 0 32px;}
+  .hero-terminal{background:var(--ink-2); border:1px solid var(--line); border-radius:10px; padding:18px 20px; font-family:var(--mono); font-size:14px; color:var(--paper-dim); overflow:hidden; position:relative;}
+  .hero-terminal .prompt{color:var(--gold);}
+  .hero-terminal .cursor{display:inline-block; width:8px; height:15px; background:var(--gold); vertical-align:-2px; animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+  #heroTypeLine{white-space:pre;}
+  .hero-goals{margin-top:32px; display:grid; grid-template-columns: repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  @media (max-width:560px){.hero-goals{grid-template-columns:1fr;}}
+  .hero-goals div{background:var(--ink-2); padding:16px 18px; font-size:13px; color:var(--paper-dim);}
+  .hero-goals strong{display:block; color:var(--paper); font-size:14px; margin-bottom:4px;}
+
+  .map-section{max-width:960px; margin:0 auto; padding:20px 0 64px;}
+  .map-section h2{max-width:var(--maxw); margin-left:auto; margin-right:auto;}
+  .map-section > p{max-width:var(--maxw); margin-left:auto; margin-right:auto; color:var(--paper-dim);}
+  #conceptMap{width:100%; height:auto; display:block;}
+  .map-node{cursor:pointer;}
+  .map-node rect{fill:var(--ink-2); stroke:var(--line); stroke-width:1.5px; transition:fill .15s, stroke .15s;}
+  .map-node:hover rect{stroke:var(--gold); fill:var(--ink-3);}
+  .map-node text{fill:var(--paper); font-family:var(--sans); font-size:12.5px;}
+  .map-node text.cluster{fill:var(--paper-faint); font-size:10.5px;}
+
+  section.concept{max-width:var(--maxw); margin:0 auto; padding:56px 0; border-top:1px solid var(--line); scroll-margin-top:24px;}
+  section.concept .eyebrow{font-family:var(--mono); font-size:12.5px; color:var(--paper-faint); margin-bottom:10px;}
+  section.concept h2{font-size:26px; margin:0 0 18px; letter-spacing:-0.01em;}
+  section.concept h3.sub{font-size:14px; color:var(--gold); margin:34px 0 10px; font-weight:600;}
+  section.concept p{color:var(--paper-dim); margin:0 0 14px;}
+  section.concept p:first-of-type{color:var(--paper);}
+
+  .callout{border-radius:10px; border:1px solid var(--line); background:var(--ink-2); padding:16px 18px; margin:18px 0; font-size:14.5px;}
+  .callout.tip{border-left:3px solid var(--blue);}
+  .callout.pitfall{border-left:3px solid var(--coral);}
+  .callout .callout-label{font-family:var(--mono); font-size:11.5px; display:block; margin-bottom:6px;}
+  .callout.tip .callout-label{color:var(--blue);}
+  .callout.pitfall .callout-label{color:var(--coral);}
+
+  .code-block{position:relative; background:#0b1013; border:1px solid var(--line); border-radius:10px; margin:16px 0 22px; overflow:hidden;}
+  .code-block .code-head{display:flex; justify-content:space-between; align-items:center; padding:9px 14px; border-bottom:1px solid var(--line); font-family:var(--mono); font-size:11.5px; color:var(--paper-faint);}
+  .code-block pre{margin:0; padding:16px 18px; overflow-x:auto; font-family:var(--mono); font-size:13px; line-height:1.65; color:#cbd6da;}
+  .code-block .kw{color:#e7b855;}
+  .code-block .str{color:#8fc9a6;}
+  .code-block .cm{color:#6b7a82; font-style:italic;}
+  .code-block .fn{color:#6fa8d8;}
+  .copy-btn{background:transparent; border:1px solid var(--line); color:var(--paper-dim); font-family:var(--mono); font-size:11px; padding:4px 10px; border-radius:6px; cursor:pointer; transition:border-color .15s, color .15s;}
+  .copy-btn:hover{border-color:var(--gold); color:var(--gold);}
+  .copy-btn.copied{border-color:var(--blue); color:var(--blue);}
+
+  .widget{border:1px solid var(--line); border-radius:12px; background:var(--ink-2); padding:20px; margin:16px 0 24px;}
+  .widget-label{font-family:var(--mono); font-size:11px; color:var(--paper-faint); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;}
+  .btn{background:var(--ink-3); border:1px solid var(--line); color:var(--paper); font-family:var(--sans); font-size:13px; padding:8px 14px; border-radius:7px; cursor:pointer; transition:border-color .15s, background .15s, transform .08s;}
+  .btn:hover{border-color:var(--gold);}
+  .btn:active{transform:scale(.97);}
+  .btn.primary{background:var(--gold-dim); border-color:var(--gold); color:#fff2d8;}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
+  input[type=text], textarea, select{background:var(--ink); border:1px solid var(--line); color:var(--paper); font-family:var(--mono); font-size:12.5px; padding:8px 10px; border-radius:7px; width:100%;}
+  textarea{resize:vertical; min-height:90px;}
+  input[type=range]{width:100%; accent-color:var(--gold);}
+  select{appearance:none; cursor:pointer;}
+
+  table.mini{width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12px;}
+  table.mini th, table.mini td{border:1px solid var(--line); padding:6px 9px; text-align:left;}
+  table.mini th{background:var(--ink-3); color:var(--gold); font-weight:600;}
+  table.mini td{color:var(--paper-dim);}
+  table.mini td.miss{color:var(--coral);}
+  table.mini td.filled{color:var(--green);}
+
+  .metric-row{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  @media (max-width:520px){.metric-row{grid-template-columns:repeat(2,1fr);}}
+  .metric-card{padding:14px; border-radius:10px; background:var(--ink); border:1px solid var(--line); text-align:center;}
+  .metric-card .mval{font-size:20px; font-weight:650; color:var(--gold); font-family:var(--mono);}
+  .metric-card .mlabel{font-size:11px; color:var(--paper-faint); margin-top:4px;}
+
+  .toggle-switch{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; cursor:pointer; font-family:var(--mono); font-size:12.5px;}
+  .toggle-switch div{padding:8px 16px; transition:background .15s, color .15s;}
+  .toggle-switch div.active{background:var(--gold-dim); color:#fff2d8;}
+
+  .badge{display:inline-block; padding:4px 12px; border-radius:20px; font-family:var(--mono); font-size:13px; border:1px solid var(--line);}
+  .kv-arrow-label{font-family:var(--mono); font-size:12.5px; color:var(--gold); margin-top:12px; min-height:18px;}
+
+  .bars-svg{width:100%; height:auto; display:block;}
+  .bar-rect{fill:var(--blue-dim); stroke:var(--blue); stroke-width:1px; transition:height .3s, y .3s;}
+
+  .pipeline-stage{opacity:.35; transition:opacity .3s;}
+  .pipeline-stage.active{opacity:1;}
+  .pipeline-stage rect{transition:stroke .3s, fill .3s;}
+  .pipeline-stage.active rect{stroke:var(--gold); fill:var(--ink-3);}
+  .pipeline-note{min-height:52px; font-size:13.5px; color:var(--paper-dim); border-top:1px dashed var(--line); padding-top:12px; margin-top:14px;}
+
+  footer.finale{max-width:var(--maxw); margin:0 auto; padding:56px 0 100px; border-top:1px solid var(--line);}
+  footer.finale h2{font-size:26px; margin-bottom:18px;}
+  footer.finale ul{padding-left:20px; color:var(--paper-dim);}
+  footer.finale li{margin-bottom:8px;}
+  .next-box{margin-top:28px; padding:20px; border-radius:12px; background:linear-gradient(135deg, var(--ink-2), var(--ink-3)); border:1px solid var(--line);}
+  .next-box strong{color:var(--gold);}
+
+  @media (prefers-reduced-motion: reduce){*{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="toc" id="tocNav">
+    <div class="toc-label">CONTENTS</div>
+    <ol>
+      <li><a href="#hero" class="tocLink" data-target="hero">Introduction</a></li>
+      <li><a href="#map" class="tocLink" data-target="map">Concept map</a></li>
+      <li><a href="#c1" class="tocLink" data-target="c1">1. Page setup & branding</a></li>
+      <li><a href="#c2" class="tocLink" data-target="c2">2. Upload gate & st.stop()</a></li>
+      <li><a href="#c3" class="tocLink" data-target="c3">3. Safe CSV reading</a></li>
+      <li><a href="#c4" class="tocLink" data-target="c4">4. Overview metrics</a></li>
+      <li><a href="#c5" class="tocLink" data-target="c5">5. Data preview</a></li>
+      <li><a href="#c6" class="tocLink" data-target="c6">6. Cleaning strategies</a></li>
+      <li><a href="#c7" class="tocLink" data-target="c7">7. Summary statistics</a></li>
+      <li><a href="#c8" class="tocLink" data-target="c8">8. Auto column detection</a></li>
+      <li><a href="#c9" class="tocLink" data-target="c9">9. Revenue histogram</a></li>
+      <li><a href="#c10" class="tocLink" data-target="c10">10. Category bar chart</a></li>
+      <li><a href="#c11" class="tocLink" data-target="c11">11. Export cleaned data</a></li>
+      <li><a href="#c12" class="tocLink" data-target="c12">12. Full pipeline</a></li>
+      <li><div class="toc-divider"></div></li>
+      <li><a href="#finale" class="tocLink" data-target="finale">Takeaways</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <div class="hero" id="hero">
+      <div class="hero-kicker"><span class="dot"></span>PROJECT LEARNING NOTEBOOK</div>
+      <h1>Data Detective Agent</h1>
+      <p class="lede">A Streamlit app that turns any uploaded CSV into an investigation: an overview, a cleanup pass, summary statistics, and automatic revenue and category charts. By the end you'll understand every piece well enough to have built it yourself.</p>
+      <div class="hero-terminal"><span class="prompt">&gt;&gt;&gt;</span> <span id="heroTypeLine"></span><span class="cursor"></span></div>
+      <div class="hero-goals">
+        <div><strong>See it</strong>Twelve concepts, each with something to click, drag, or type — not just read.</div>
+        <div><strong>Build it</strong>Real code from <code>app_p6.py</code>, explained line by line.</div>
+        <div><strong>Own it</strong>Understand the app well enough to add new cleaning rules or charts.</div>
+      </div>
+    </div>
+
+    <div class="map-section" id="map">
+      <div style="max-width:var(--maxw); margin:0 auto; font-family:var(--mono); color:var(--paper-faint); font-size:12.5px;">THE LANDSCAPE</div>
+      <h2>Twelve ideas, four families</h2>
+      <p>Click any node to jump straight to that section. Setup decides how the app looks, ingestion gets the data in safely, cleaning &amp; stats make sense of it, and visualization &amp; export turn it into something you can act on.</p>
+      <svg id="conceptMap" viewBox="0 0 920 420" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- ============ 1. PAGE SETUP & BRANDING ============ -->
+    <section class="concept" id="c1">
+      <div class="eyebrow">CONCEPT 1 / SETUP</div>
+      <h2>Page setup &amp; injected CSS branding</h2>
+      <p><code>st.set_page_config</code> configures the browser tab, and a block of raw CSS injected through <code>st.markdown(..., unsafe_allow_html=True)</code> gives the app its own look instead of Streamlit's defaults.</p>
+      <p>It's like decorating a rented apartment: Streamlit hands you the walls and plumbing, and this CSS block is you painting the walls your own color before anyone moves in.</p>
+
+      <h3 class="sub">WHY IT MATTERS</h3>
+      <p>Without this, every Streamlit app looks identical — same font, same blue. The <code>.main-title</code>, <code>.subtitle</code> and <code>.metric-card</code> classes are what make this dashboard feel like a distinct product.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>.main-title { color: ...; font-size: ...px; }</span></div>
+        <div style="background:#fff; border-radius:8px; padding:16px 18px;">
+          <div id="c1preview" style="font-size:38px; font-weight:700; color:#1f4e79; margin-bottom:4px;">🔎 Data Detective Agent</div>
+          <div style="font-size:15px; color:#666;">Upload your transaction CSV and investigate your data.</div>
+        </div>
+        <div style="margin-top:14px;">
+          <label style="font-size:12px; color:var(--paper-faint); font-family:var(--mono);">color</label>
+          <input type="text" id="c1color" value="#1f4e79" oninput="c1update()">
+        </div>
+        <div style="margin-top:10px;">
+          <label style="font-size:12px; color:var(--paper-faint); font-family:var(--mono);">font-size: <span id="c1sizeval">38</span>px</label>
+          <input type="range" min="18" max="56" value="38" id="c1size" oninput="c1update()">
+        </div>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c1code')">Copy</button></div>
+        <pre id="c1code">st.markdown(<span class="str">"""</span>
+<span class="kw">&lt;style&gt;</span>
+    .main-title { font-size: <span class="kw">38px</span>; color: <span class="kw">#1f4e79</span>; }
+<span class="kw">&lt;/style&gt;</span>
+<span class="str">"""</span>, unsafe_allow_html=<span class="kw">True</span>)
+
+st.markdown(<span class="str">'&lt;div class="main-title"&gt;🔎 Data Detective Agent&lt;/div&gt;'</span>, unsafe_allow_html=<span class="kw">True</span>)</pre>
+      </div>
+
+      <div class="callout pitfall">
+        <span class="callout-label">PITFALL</span>
+        <code>unsafe_allow_html=True</code> renders whatever HTML you pass it, no questions asked. It's fine for your own hardcoded strings — never pass user-uploaded text through it, or you'd open the door to injected scripts.
+      </div>
+    </section>
+
+    <!-- ============ 2. UPLOAD GATE ============ -->
+    <section class="concept" id="c2">
+      <div class="eyebrow">CONCEPT 2 / INGESTION</div>
+      <h2>The upload gate &amp; <code>st.stop()</code></h2>
+      <p>The whole dashboard below only makes sense once there's a file to analyze — so the script checks for one first, and calls <code>st.stop()</code> to halt everything else if there isn't.</p>
+      <p>It's a locked turnstile at a train station: nobody gets to the platform (the dashboard code) until they've tapped a card (uploaded a file).</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>uploaded_file</span></div>
+        <div class="toggle-switch" onclick="c2toggle()">
+          <div id="c2off" class="active">No file</div>
+          <div id="c2on">File uploaded</div>
+        </div>
+        <div id="c2result" style="margin-top:16px; font-size:13.5px; color:var(--paper-dim);"></div>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c2code')">Copy</button></div>
+        <pre id="c2code"><span class="kw">if</span> uploaded_file <span class="kw">is</span> <span class="kw">None</span>:
+    st.info(<span class="str">"📂 Please upload a CSV file from the sidebar to begin."</span>)
+    <span class="cm"># ...show the "what this app can do" preview...</span>
+    st.stop()  <span class="cm"># nothing below this line runs</span>
+
+<span class="cm"># everything from here on assumes a file exists</span>
+df = pd.read_csv(uploaded_file)</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        <code>st.stop()</code> is different from <code>return</code> — it halts the entire script execution immediately, which is exactly what you want at top level in a Streamlit file where there's no function to return from.
+      </div>
+    </section>
+
+    <!-- ============ 3. SAFE CSV READING ============ -->
+    <section class="concept" id="c3">
+      <div class="eyebrow">CONCEPT 3 / INGESTION</div>
+      <h2>Reading the CSV safely</h2>
+      <p>A <code>try/except</code> around <code>pd.read_csv</code> catches malformed files and shows a friendly error instead of letting the whole app crash with a stack trace.</p>
+      <p>It's a bouncer checking IDs at the door: a real, well-formed file gets waved through; anything broken gets turned away with an explanation, not a scene.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>try: pd.read_csv(uploaded_file)</span></div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="c3read('good')">Upload valid CSV</button>
+          <button class="btn" onclick="c3read('bad')">Upload corrupted file</button>
+        </div>
+        <div id="c3result" style="margin-top:16px;"></div>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c3code')">Copy</button></div>
+        <pre id="c3code"><span class="kw">try</span>:
+    df = pd.read_csv(uploaded_file)
+<span class="kw">except</span> <span class="fn">Exception</span> <span class="kw">as</span> e:
+    st.error(<span class="fn">f</span><span class="str">"❌ Could not read the CSV file: {e}"</span>)
+    st.stop()</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        Catching the broad <code>Exception</code> here is deliberate — a CSV can fail to parse in many different ways (bad encoding, wrong delimiter, truncated file), and the user just needs to know "it didn't work," not the exact exception class.
+      </div>
+    </section>
+
+    <!-- ============ 4. OVERVIEW METRICS ============ -->
+    <section class="concept" id="c4">
+      <div class="eyebrow">CONCEPT 4 / CLEANING & STATS</div>
+      <h2>Dataset overview metrics</h2>
+      <p>Four numbers — rows, columns, missing values, duplicate rows — give an instant health check on any dataset before you dig deeper.</p>
+
+      <h3 class="sub">TRY IT — EDIT THE CSV</h3>
+      <div class="widget">
+        <div class="widget-label"><span>df.shape, df.isnull().sum().sum(), df.duplicated().sum()</span></div>
+        <textarea id="c4input" oninput="c4update()">name,revenue,category
+Alice,120,Food
+Bob,,Travel
+Alice,120,Food
+Carol,340,Food</textarea>
+        <div class="metric-row" style="margin-top:14px;">
+          <div class="metric-card"><div class="mval" id="c4rows">0</div><div class="mlabel">Rows</div></div>
+          <div class="metric-card"><div class="mval" id="c4cols">0</div><div class="mlabel">Columns</div></div>
+          <div class="metric-card"><div class="mval" id="c4miss">0</div><div class="mlabel">Missing Values</div></div>
+          <div class="metric-card"><div class="mval" id="c4dupe">0</div><div class="mlabel">Duplicate Rows</div></div>
+        </div>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c4code')">Copy</button></div>
+        <pre id="c4code">st.metric(<span class="str">"Rows"</span>, df.shape[<span class="kw">0</span>])
+st.metric(<span class="str">"Columns"</span>, df.shape[<span class="kw">1</span>])
+st.metric(<span class="str">"Missing Values"</span>, <span class="fn">int</span>(df.isnull().sum().sum()))
+st.metric(<span class="str">"Duplicate Rows"</span>, <span class="fn">int</span>(df.duplicated().sum()))</pre>
+      </div>
+
+      <div class="callout pitfall">
+        <span class="callout-label">PITFALL</span>
+        <code>df.isnull().sum()</code> alone gives missing counts <em>per column</em> — you need the second <code>.sum()</code> to collapse that into one total number, or you'd be handing <code>st.metric</code> a whole Series instead of an integer.
+      </div>
+    </section>
+
+    <!-- ============ 5. DATA PREVIEW ============ -->
+    <section class="concept" id="c5">
+      <div class="eyebrow">CONCEPT 5 / CLEANING & STATS</div>
+      <h2>Data preview with <code>head()</code></h2>
+      <p><code>df.head(20)</code> shows just the first 20 rows — enough to sanity-check the data without rendering a potentially huge table.</p>
+      <p>It's a restaurant menu with photos of a few dishes, not a photo of every single plate the kitchen has ever made — a representative sample is what actually helps you decide.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>df.head(n)</span><span id="c5nval">n = 3</span></div>
+        <input type="range" min="1" max="6" value="3" id="c5slider" oninput="c5update(this.value)">
+        <table class="mini" style="margin-top:12px;">
+          <thead><tr><th>name</th><th>revenue</th><th>category</th></tr></thead>
+          <tbody id="c5rows"></tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c5code')">Copy</button></div>
+        <pre id="c5code">st.dataframe(
+    df.head(<span class="kw">20</span>),
+    use_container_width=<span class="kw">True</span>
+)</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        <code>st.dataframe</code> (interactive, sortable, scrollable) is a different widget from <code>st.table</code> (static, renders every row). For a preview like this, <code>st.dataframe</code> is almost always the right choice.
+      </div>
+    </section>
+
+    <!-- ============ 6. CLEANING STRATEGIES ============ -->
+    <section class="concept" id="c6">
+      <div class="eyebrow">CONCEPT 6 / CLEANING & STATS</div>
+      <h2>Missing-value cleaning strategies</h2>
+      <p>Three different fixes for the same problem — drop the row, fill with the column's average, or fill with zero — each with a real trade-off in how much data you keep versus how much you distort it.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>missing revenue values in a sample table</span></div>
+        <table class="mini" id="c6table"></table>
+        <div class="btn-row">
+          <button class="btn" onclick="c6clean('drop')">dropna()</button>
+          <button class="btn" onclick="c6clean('mean')">fillna(mean)</button>
+          <button class="btn" onclick="c6clean('zero')">fillna(0)</button>
+          <button class="btn primary" onclick="c6reset()">reset</button>
+        </div>
+        <div class="kv-arrow-label" id="c6out">&nbsp;</div>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c6code')">Copy</button></div>
+        <pre id="c6code"><span class="kw">if</span> cleaning_option == <span class="str">"Remove rows with missing values"</span>:
+    df = df.dropna()
+
+<span class="kw">elif</span> cleaning_option == <span class="str">"Fill numeric missing values with mean"</span>:
+    <span class="kw">for</span> column <span class="kw">in</span> df.select_dtypes(include=<span class="str">"number"</span>).columns:
+        df[column] = df[column].fillna(df[column].mean())
+
+<span class="kw">elif</span> cleaning_option == <span class="str">"Fill missing values with 0"</span>:
+    df = df.fillna(<span class="kw">0</span>)</pre>
+      </div>
+
+      <div class="callout pitfall">
+        <span class="callout-label">PITFALL</span>
+        <code>fillna(0)</code> is tempting because it's simple, but for a column like revenue it silently invents "free" transactions — that can quietly wreck an average. <code>fillna(mean)</code> is usually the gentler choice for numeric data.
+      </div>
+    </section>
+
+    <!-- ============ 7. SUMMARY STATISTICS ============ -->
+    <section class="concept" id="c7">
+      <div class="eyebrow">CONCEPT 7 / CLEANING & STATS</div>
+      <h2>Summary statistics</h2>
+      <p><code>describe()</code> runs count, mean, std, min, quartiles and max on every numeric column in one call — a full statistical snapshot with zero manual math.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>numeric_df.describe()</span></div>
+        <select id="c7select" onchange="c7update()">
+          <option value="revenue">revenue: 120, 340, 75, 500, 210</option>
+          <option value="qty">qty: 2, 5, 1, 8, 3</option>
+        </select>
+        <table class="mini" style="margin-top:12px;">
+          <tbody id="c7rows"></tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c7code')">Copy</button></div>
+        <pre id="c7code">numeric_df = df.select_dtypes(include=<span class="str">"number"</span>)
+
+<span class="kw">if</span> numeric_df.empty:
+    st.warning(<span class="str">"No numeric columns found in this dataset."</span>)
+<span class="kw">else</span>:
+    st.dataframe(numeric_df.describe(), use_container_width=<span class="kw">True</span>)</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        The empty-check matters: a CSV of pure text columns (names, cities, notes) has no numeric columns at all, and calling <code>.describe()</code> on an empty frame would just render a confusing blank table instead of a clear message.
+      </div>
+    </section>
+
+    <!-- ============ 8. AUTO COLUMN DETECTION ============ -->
+    <section class="concept" id="c8">
+      <div class="eyebrow">CONCEPT 8 / VISUALIZATION & EXPORT</div>
+      <h2>Finding the revenue column automatically</h2>
+      <p>Instead of asking the user to pick which column is "revenue," the app scans every column name for the substring <code>"revenue"</code>, case-insensitively, and uses the first match.</p>
+      <p>It's like scanning a bookshelf by spine title instead of asking someone to hand you the exact book — as long as the word is somewhere in the name, it gets found.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>[col for col in df.columns if "revenue" in col.lower()]</span></div>
+        <input type="text" id="c8input" value="Total_Revenue_USD" oninput="c8update()">
+        <div class="kv-arrow-label" id="c8out">&nbsp;</div>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c8code')">Copy</button></div>
+        <pre id="c8code">revenue_columns = [
+    col <span class="kw">for</span> col <span class="kw">in</span> df.columns
+    <span class="kw">if</span> <span class="str">"revenue"</span> <span class="kw">in</span> col.lower()
+]
+
+<span class="kw">if</span> revenue_columns:
+    revenue_column = revenue_columns[<span class="kw">0</span>]  <span class="cm"># just takes the first match</span></pre>
+      </div>
+
+      <div class="callout pitfall">
+        <span class="callout-label">PITFALL</span>
+        If a CSV has both <code>"Revenue_2023"</code> and <code>"Revenue_2024"</code>, this silently picks whichever column comes first — worth double-checking the metric labeled "Revenue Analysis" is actually the column you meant.
+      </div>
+    </section>
+
+    <!-- ============ 9. REVENUE HISTOGRAM ============ -->
+    <section class="concept" id="c9">
+      <div class="eyebrow">CONCEPT 9 / VISUALIZATION & EXPORT</div>
+      <h2>Revenue distribution histogram</h2>
+      <p>A histogram groups numeric values into buckets ("bins") and draws a bar for how many values fall in each — turning a long column of numbers into one shape you can read at a glance.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>px.histogram(df, x="revenue", nbins=n)</span><span id="c9nbinsval">nbins = 5</span></div>
+        <input type="range" min="3" max="10" value="5" id="c9slider" oninput="c9update(this.value)">
+        <svg id="c9svg" class="bars-svg" viewBox="0 0 500 160"></svg>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c9code')">Copy</button></div>
+        <pre id="c9code">fig = px.histogram(
+    df, x=revenue_column, nbins=<span class="kw">20</span>,
+    title=<span class="str">"Revenue Distribution"</span>,
+    labels={revenue_column: <span class="str">"Revenue"</span>}
+)
+fig.update_layout(bargap=<span class="kw">0.1</span>)
+st.plotly_chart(fig, use_container_width=<span class="kw">True</span>)</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        Too few bins hides structure (everything looks like one lump); too many bins turns the histogram into noisy spikes. <code>nbins</code> is a dial worth tuning per dataset, not a value to hardcode and forget.
+      </div>
+    </section>
+
+    <!-- ============ 10. CATEGORY BAR CHART ============ -->
+    <section class="concept" id="c10">
+      <div class="eyebrow">CONCEPT 10 / VISUALIZATION & EXPORT</div>
+      <h2>Category distribution bar chart</h2>
+      <p><code>value_counts()</code> tallies how often each distinct value appears in a column, and a bar chart turns those tallies into an instant "what's most common" picture.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>df[col].value_counts()</span></div>
+        <select id="c10select" onchange="c10update()">
+          <option value="category">category</option>
+          <option value="region">region</option>
+        </select>
+        <svg id="c10svg" class="bars-svg" viewBox="0 0 500 160"></svg>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c10code')">Copy</button></div>
+        <pre id="c10code">category_counts = df[selected_category].value_counts().reset_index()
+category_counts.columns = [selected_category, <span class="str">"Count"</span>]
+
+fig2 = px.bar(category_counts, x=selected_category, y=<span class="str">"Count"</span>,
+              title=<span class="fn">f</span><span class="str">"{selected_category} Distribution"</span>)</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        <code>select_dtypes(include=["object","category"])</code> is what finds which columns are even eligible to appear in that selectbox — a numeric column like revenue never shows up here because counting its distinct values usually isn't meaningful.
+      </div>
+    </section>
+
+    <!-- ============ 11. EXPORT ============ -->
+    <section class="concept" id="c11">
+      <div class="eyebrow">CONCEPT 11 / VISUALIZATION & EXPORT</div>
+      <h2>Exporting the cleaned data</h2>
+      <p><code>df.to_csv()</code> turns the (possibly cleaned) DataFrame back into plain CSV text, and <code>st.download_button</code> hands that text to the browser as a file the user can save.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>st.download_button(data=csv_data, file_name="cleaned_data.csv")</span></div>
+        <div class="btn-row"><button class="btn primary" onclick="c11download()">📥 Download Cleaned CSV</button></div>
+        <div id="c11out" class="widget-label" style="margin-top:14px; display:none; flex-direction:column; align-items:flex-start; white-space:pre; font-family:var(--mono); color:var(--paper-dim);"></div>
+      </div>
+
+      <h3 class="sub">CODE, FROM app_p6.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>app_p6.py</span><button class="copy-btn" onclick="copyCode(this,'c11code')">Copy</button></div>
+        <pre id="c11code">csv_data = df.to_csv(index=<span class="kw">False</span>)
+
+st.download_button(
+    label=<span class="str">"📥 Download Cleaned CSV"</span>,
+    data=csv_data,
+    file_name=<span class="str">"cleaned_data.csv"</span>,
+    mime=<span class="str">"text/csv"</span>
+)</pre>
+      </div>
+
+      <div class="callout pitfall">
+        <span class="callout-label">PITFALL</span>
+        <code>index=False</code> matters — leave it out and pandas writes an extra unnamed numbering column into the exported CSV, which isn't part of the original data at all.
+      </div>
+    </section>
+
+    <!-- ============ 12. FULL PIPELINE ============ -->
+    <section class="concept" id="c12">
+      <div class="eyebrow">HOW IT ALL FITS TOGETHER</div>
+      <h2>The full pipeline</h2>
+      <p>Every concept above is one stage in a single pass through the app. Step through it to see how a raw CSV becomes a cleaned, visualized, downloadable dataset.</p>
+
+      <div class="widget">
+        <svg id="pipelineSvg" viewBox="0 0 700 130" style="width:100%; height:auto;"></svg>
+        <div class="pipeline-note" id="pipelineNote">Press "Start" to walk through one full pass.</div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="pipeStep()">▶ Start / Next step</button>
+          <button class="btn" onclick="pipeReset()">reset</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="finale" id="finale">
+      <h2>Key takeaways</h2>
+      <ul>
+        <li><strong>Guard the entry point.</strong> The upload check and <code>st.stop()</code> mean every line below can safely assume a valid file exists — no defensive checks scattered everywhere else.</li>
+        <li><strong>Fail loud in code, fail soft on screen.</strong> The <code>try/except</code> around <code>read_csv</code> turns a crash into a readable message, which is the difference between a tool people trust and one they abandon.</li>
+        <li><strong>Detect, don't demand.</strong> Auto-finding the revenue column by name, and auto-listing categorical columns by dtype, means the user barely has to configure anything.</li>
+        <li><strong>Every transform is a trade-off.</strong> Dropping rows, filling with the mean, and filling with zero all "solve" missing data differently — the right one depends on what the numbers mean.</li>
+      </ul>
+      <div class="next-box">
+        <strong>What this unlocks next:</strong> upload → validate → clean → analyze → visualize → export is the same shape behind almost any data tool you'll build — a survey analyzer, a sales dashboard, a log inspector. Swap the charts and cleaning rules, and the skeleton still holds.
+      </div>
+    </footer>
+  </main>
+</div>
+
+<script>
+/* ---------------- TOC active highlighting ---------------- */
+(function(){
+  const links = document.querySelectorAll('.tocLink');
+  const map = {};
+  links.forEach(l => map[l.dataset.target] = l);
+  const targets = document.querySelectorAll('main [id]');
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        links.forEach(l=>l.classList.remove('active'));
+        const l = map[e.target.id];
+        if(l) l.classList.add('active');
+      }
+    });
+  }, {rootMargin:"-20% 0px -70% 0px"});
+  targets.forEach(t=>obs.observe(t));
+})();
+
+/* ---------------- Hero typing effect ---------------- */
+(function(){
+  const line = "streamlit run app_p6.py";
+  const el = document.getElementById('heroTypeLine');
+  let i=0;
+  function tick(){
+    if(i<=line.length){ el.textContent = line.slice(0,i); i++; setTimeout(tick, 55); }
+  }
+  tick();
+})();
+
+/* ---------------- Copy buttons ---------------- */
+function copyCode(btn, preId){
+  const text = document.getElementById(preId).innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig = btn.textContent;
+    btn.textContent = "Copied"; btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent = orig; btn.classList.remove('copied'); }, 1400);
+  }).catch(()=>{});
+}
+
+/* ---------------- Concept map ---------------- */
+(function(){
+  const svg = document.getElementById('conceptMap');
+  const clusters = [
+    {name:"SETUP", x:40, nodes:[["1. Page & branding","c1"]]},
+    {name:"INGESTION", x:270, nodes:[["2. Upload gate","c2"],["3. Safe CSV read","c3"]]},
+    {name:"CLEANING & STATS", x:500, nodes:[["4. Overview metrics","c4"],["5. Data preview","c5"],["6. Cleaning strategies","c6"],["7. Summary stats","c7"]]},
+    {name:"VISUALIZATION & EXPORT", x:730, nodes:[["8. Auto column detect","c8"],["9. Revenue histogram","c9"],["10. Category chart","c10"],["11. Export data","c11"]]},
+  ];
+  let svgHtml = "";
+  clusters.forEach(cl=>{
+    svgHtml += `<text class="cluster" x="${cl.x}" y="24">${cl.name}</text>`;
+    cl.nodes.forEach((n,i)=>{
+      const y = 50 + i*60;
+      svgHtml += `<g class="map-node" onclick="document.getElementById('${n[1]}').scrollIntoView({behavior:'smooth'})">
+        <rect x="${cl.x}" y="${y}" width="175" height="40" rx="8"></rect>
+        <text x="${cl.x+14}" y="${y+25}">${n[0]}</text>
+      </g>`;
+    });
+  });
+  svgHtml += `<g class="map-node" onclick="document.getElementById('c12').scrollIntoView({behavior:'smooth'})">
+    <rect x="370" y="360" width="180" height="40" rx="8"></rect>
+    <text x="384" y="385">12. Full pipeline</text>
+  </g>`;
+  svg.innerHTML = svgHtml;
+})();
+
+/* ---------------- C1: CSS branding editor ---------------- */
+function c1update(){
+  const color = document.getElementById('c1color').value;
+  const size = document.getElementById('c1size').value;
+  document.getElementById('c1sizeval').textContent = size;
+  const el = document.getElementById('c1preview');
+  el.style.color = color;
+  el.style.fontSize = size+'px';
+}
+
+/* ---------------- C2: Upload gate toggle ---------------- */
+let c2state = false;
+function c2toggle(){
+  c2state = !c2state;
+  document.getElementById('c2off').classList.toggle('active', !c2state);
+  document.getElementById('c2on').classList.toggle('active', c2state);
+  document.getElementById('c2result').innerHTML = c2state
+    ? '<span style="color:var(--green);">uploaded_file is not None</span> → execution continues, dashboard renders below.'
+    : '<span style="color:var(--coral);">uploaded_file is None</span> → st.info(...) shown, then <code>st.stop()</code> halts the script. Nothing after this point runs.';
+}
+c2toggle(); c2toggle(); // initialize text without double toggle state issue
+c2state = false;
+document.getElementById('c2off').classList.add('active');
+document.getElementById('c2on').classList.remove('active');
+document.getElementById('c2result').innerHTML = '<span style="color:var(--coral);">uploaded_file is None</span> → st.info(...) shown, then <code>st.stop()</code> halts the script. Nothing after this point runs.';
+
+/* ---------------- C3: Safe read ---------------- */
+function c3read(kind){
+  const el = document.getElementById('c3result');
+  if(kind === 'good'){
+    el.innerHTML = '<table class="mini"><thead><tr><th>name</th><th>revenue</th></tr></thead><tbody><tr><td>Alice</td><td>120</td></tr><tr><td>Bob</td><td>340</td></tr></tbody></table><div class="kv-arrow-label">pd.read_csv succeeded — df is ready to use.</div>';
+  } else {
+    el.innerHTML = '<div class="callout pitfall" style="margin:0;"><span class="callout-label">CAUGHT</span>❌ Could not read the CSV file: Error tokenizing data. C error: Expected 2 fields, saw 5</div>';
+  }
+}
+
+/* ---------------- C4: Overview metrics ---------------- */
+function c4parseCSV(text){
+  const lines = text.trim().split('\n').filter(l=>l.length>0);
+  if(lines.length===0) return {rows:[], cols:[]};
+  const cols = lines[0].split(',');
+  const rows = lines.slice(1).map(l=>l.split(','));
+  return {cols, rows};
+}
+function c4update(){
+  const text = document.getElementById('c4input').value;
+  const {cols, rows} = c4parseCSV(text);
+  let missing = 0;
+  rows.forEach(r=>{
+    for(let i=0;i<cols.length;i++){
+      if(!r[i] || r[i].trim()==='') missing++;
+    }
+  });
+  const seen = new Set();
+  let dupes = 0;
+  rows.forEach(r=>{
+    const key = r.join(',');
+    if(seen.has(key)) dupes++; else seen.add(key);
+  });
+  document.getElementById('c4rows').textContent = rows.length;
+  document.getElementById('c4cols').textContent = cols.length;
+  document.getElementById('c4miss').textContent = missing;
+  document.getElementById('c4dupe').textContent = dupes;
+}
+c4update();
+
+/* ---------------- C5: Preview slider ---------------- */
+const c5data = [
+  ["Alice","120","Food"],["Bob","340","Travel"],["Carol","75","Food"],
+  ["Dave","500","Tech"],["Eve","210","Travel"],["Frank","90","Food"]
+];
+function c5update(n){
+  document.getElementById('c5nval').textContent = 'n = '+n;
+  const rows = c5data.slice(0, parseInt(n));
+  document.getElementById('c5rows').innerHTML = rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+}
+c5update(3);
+
+/* ---------------- C6: Cleaning strategies ---------------- */
+const c6original = [
+  {name:"Alice", revenue:"120"},
+  {name:"Bob", revenue:null},
+  {name:"Carol", revenue:"340"},
+  {name:"Dave", revenue:null},
+  {name:"Eve", revenue:"210"}
+];
+function c6render(data, note){
+  const rows = data.map(d=>{
+    const val = d.revenue===null ? '<span style="color:var(--coral);">NaN</span>' : d.revenue;
+    return `<tr><td>${d.name}</td><td class="${d.revenue===null?'miss':''}">${val}</td></tr>`;
+  }).join('');
+  document.getElementById('c6table').innerHTML = '<thead><tr><th>name</th><th>revenue</th></tr></thead><tbody>'+rows+'</tbody>';
+  document.getElementById('c6out').textContent = note || '\u00A0';
+}
+function c6clean(kind){
+  let data;
+  if(kind === 'drop'){
+    data = c6original.filter(d=>d.revenue !== null);
+    c6render(data, 'dropna(): 2 rows removed — down to '+data.length+' rows.');
+  } else if(kind === 'mean'){
+    const nums = c6original.filter(d=>d.revenue!==null).map(d=>parseFloat(d.revenue));
+    const mean = (nums.reduce((a,b)=>a+b,0)/nums.length).toFixed(1);
+    data = c6original.map(d=>({name:d.name, revenue: d.revenue===null ? mean : d.revenue, filled: d.revenue===null}));
+    document.getElementById('c6table').innerHTML = '<thead><tr><th>name</th><th>revenue</th></tr></thead><tbody>'+
+      data.map(d=>`<tr><td>${d.name}</td><td class="${d.filled?'filled':''}">${d.revenue}</td></tr>`).join('')+'</tbody>';
+    document.getElementById('c6out').textContent = 'fillna(mean): missing values replaced with '+mean+' (highlighted).';
+  } else {
+    data = c6original.map(d=>({name:d.name, revenue: d.revenue===null?'0':d.revenue, filled: d.revenue===null}));
+    document.getElementById('c6table').innerHTML = '<thead><tr><th>name</th><th>revenue</th></tr></thead><tbody>'+
+      data.map(d=>`<tr><td>${d.name}</td><td class="${d.filled?'filled':''}">${d.revenue}</td></tr>`).join('')+'</tbody>';
+    document.getElementById('c6out').textContent = 'fillna(0): missing values replaced with 0 (highlighted).';
+  }
+}
+function c6reset(){ c6render(c6original); }
+c6reset();
+
+/* ---------------- C7: Summary stats ---------------- */
+const c7datasets = {
+  revenue: [120,340,75,500,210],
+  qty: [2,5,1,8,3]
+};
+function describe(nums){
+  const sorted = [...nums].sort((a,b)=>a-b);
+  const n = nums.length;
+  const mean = nums.reduce((a,b)=>a+b,0)/n;
+  const variance = nums.reduce((a,b)=>a+(b-mean)**2,0)/(n-1);
+  const std = Math.sqrt(variance);
+  const pct = p => {
+    const idx = (n-1)*p;
+    const lo = Math.floor(idx), hi = Math.ceil(idx);
+    if(lo===hi) return sorted[lo];
+    return sorted[lo] + (sorted[hi]-sorted[lo])*(idx-lo);
+  };
+  return {count:n, mean:mean.toFixed(2), std:std.toFixed(2), min:sorted[0], q25:pct(0.25).toFixed(1), q50:pct(0.5).toFixed(1), q75:pct(0.75).toFixed(1), max:sorted[n-1]};
+}
+function c7update(){
+  const key = document.getElementById('c7select').value;
+  const d = describe(c7datasets[key]);
+  const rows = [["count",d.count],["mean",d.mean],["std",d.std],["min",d.min],["25%",d.q25],["50%",d.q50],["75%",d.q75],["max",d.max]];
+  document.getElementById('c7rows').innerHTML = rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('');
+}
+c7update();
+
+/* ---------------- C8: Auto column detection ---------------- */
+function c8update(){
+  const val = document.getElementById('c8input').value;
+  const match = val.toLowerCase().includes('revenue');
+  document.getElementById('c8out').innerHTML = match
+    ? '<span style="color:var(--green);">✓ matched</span> — revenue_columns = ["'+val+'"] → auto-selected for Revenue Analysis.'
+    : '<span style="color:var(--coral);">✗ no match</span> — revenue_columns = [] → app shows "No column containing \'revenue\' was found."';
+}
+c8update();
+
+/* ---------------- C9: Revenue histogram ---------------- */
+const c9revenues = [45,120,130,210,340,355,90,275,60,410,180,240,310,95,150];
+function c9update(nbins){
+  document.getElementById('c9nbinsval').textContent = 'nbins = '+nbins;
+  nbins = parseInt(nbins);
+  const min = Math.min(...c9revenues), max = Math.max(...c9revenues);
+  const binWidth = (max-min)/nbins;
+  const counts = new Array(nbins).fill(0);
+  c9revenues.forEach(v=>{
+    let idx = Math.floor((v-min)/binWidth);
+    if(idx>=nbins) idx = nbins-1;
+    counts[idx]++;
+  });
+  const maxCount = Math.max(...counts);
+  const svg = document.getElementById('c9svg');
+  const w = 500, h=160, pad=20;
+  const barW = (w-2*pad)/nbins;
+  let html = '';
+  counts.forEach((c,i)=>{
+    const barH = maxCount ? (c/maxCount)*(h-40) : 0;
+    const x = pad + i*barW;
+    const y = h-30-barH;
+    html += `<rect class="bar-rect" x="${x+2}" y="${y}" width="${barW-4}" height="${barH}"></rect>`;
+    html += `<text x="${x+barW/2}" y="${h-14}" text-anchor="middle" font-size="9" fill="var(--paper-faint)">${c}</text>`;
+  });
+  svg.innerHTML = html;
+}
+c9update(5);
+
+/* ---------------- C10: Category bar chart ---------------- */
+const c10data = {
+  category: {Food:5, Travel:3, Tech:2, Entertainment:1},
+  region: {North:4, South:3, East:2, West:2}
+};
+function c10update(){
+  const key = document.getElementById('c10select').value;
+  const data = c10data[key];
+  const entries = Object.entries(data);
+  const maxCount = Math.max(...entries.map(e=>e[1]));
+  const svg = document.getElementById('c10svg');
+  const w=500, h=160, pad=30;
+  const barW = (w-2*pad)/entries.length;
+  let html = '';
+  entries.forEach(([label,count],i)=>{
+    const barH = (count/maxCount)*(h-50);
+    const x = pad + i*barW;
+    const y = h-30-barH;
+    html += `<rect class="bar-rect" x="${x+6}" y="${y}" width="${barW-12}" height="${barH}"></rect>`;
+    html += `<text x="${x+barW/2}" y="${h-14}" text-anchor="middle" font-size="10" fill="var(--paper-dim)">${label}</text>`;
+    html += `<text x="${x+barW/2}" y="${y-6}" text-anchor="middle" font-size="10" fill="var(--gold)">${count}</text>`;
+  });
+  svg.innerHTML = html;
+}
+c10update();
+
+/* ---------------- C11: Export ---------------- */
+function c11download(){
+  const csv = "name,revenue,category\nAlice,120,Food\nBob,340,Travel\nCarol,75,Food\n";
+  const el = document.getElementById('c11out');
+  el.style.display = 'flex';
+  el.textContent = csv;
+}
+
+/* ---------------- C12: Pipeline ---------------- */
+const pipeStages = [
+  {label:"Upload CSV", note:"The player selects a file in the sidebar — uploaded_file becomes a real object instead of None, and st.stop() no longer triggers."},
+  {label:"Read safely", note:"pd.read_csv runs inside try/except, turning a malformed file into a clean error message instead of a crash."},
+  {label:"Overview", note:"Row/column/missing/duplicate counts give an instant first read on data quality."},
+  {label:"Clean", note:"The user picks a strategy — drop, fill with mean, or fill with 0 — and df is transformed accordingly."},
+  {label:"Stats & charts", note:"describe() summarizes numeric columns; the revenue histogram and category bar chart render from the (possibly cleaned) data."},
+  {label:"Export", note:"to_csv() turns the final DataFrame back into text, and download_button hands it to the browser as cleaned_data.csv."}
+];
+let pipeIdx = -1;
+function pipeRenderSvg(){
+  const svg = document.getElementById('pipelineSvg');
+  let html = '';
+  const w = 105, gap = 8, startX = 5;
+  pipeStages.forEach((s,i)=>{
+    const x = startX + i*(w+gap);
+    const words = s.label.split(' ');
+    html += `<g class="pipeline-stage" id="pipe-${i}">
+      <rect x="${x}" y="20" width="${w}" height="60" rx="8" fill="var(--ink)" stroke="var(--line)"></rect>
+      <text x="${x+w/2}" y="45" text-anchor="middle" font-size="10.5" fill="var(--paper)" font-family="var(--sans)">${words[0]||''}</text>
+      <text x="${x+w/2}" y="60" text-anchor="middle" font-size="10.5" fill="var(--paper)" font-family="var(--sans)">${words.slice(1).join(' ')}</text>
+    </g>`;
+    if(i < pipeStages.length-1){
+      html += `<text x="${x+w+2}" y="55" fill="var(--paper-faint)" font-size="14">→</text>`;
+    }
+  });
+  svg.innerHTML = html;
+}
+function pipeStep(){
+  pipeIdx++;
+  if(pipeIdx >= pipeStages.length){ pipeIdx = pipeStages.length-1; }
+  document.querySelectorAll('.pipeline-stage').forEach((el,i)=>{ el.classList.toggle('active', i<=pipeIdx); });
+  document.getElementById('pipelineNote').textContent = pipeStages[pipeIdx].label+' — '+pipeStages[pipeIdx].note;
+}
+function pipeReset(){
+  pipeIdx = -1;
+  document.querySelectorAll('.pipeline-stage').forEach(el=>el.classList.remove('active'));
+  document.getElementById('pipelineNote').textContent = 'Press "Start" to walk through one full pass.';
+}
+pipeRenderSvg();
+</script>
+</body>
+</html>

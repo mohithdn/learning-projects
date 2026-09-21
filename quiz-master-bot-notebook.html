@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Master Bot — Interactive Learning Notebook</title>
+<style>
+  :root{
+    --ink:#10161a;
+    --ink-2:#161f24;
+    --ink-3:#1d2830;
+    --line:#2a3740;
+    --paper:#eef2f0;
+    --paper-dim:#aebcc2;
+    --paper-faint:#7c8b92;
+    --blue:#6fa8d8;
+    --blue-dim:#3f5b73;
+    --gold:#e7b855;
+    --gold-dim:#7a6534;
+    --coral:#e08672;
+    --coral-dim:#6e4038;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", "Menlo", monospace;
+    --sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --maxw: 700px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:24px;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--sans);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--gold-dim); color:var(--paper);}
+  a{color:var(--blue);}
+
+  /* ---------- Layout shell ---------- */
+  .shell{
+    display:grid;
+    grid-template-columns: 220px 1fr;
+    max-width:1180px;
+    margin:0 auto;
+  }
+  @media (max-width:900px){
+    .shell{grid-template-columns: 1fr;}
+    nav.toc{display:none;}
+  }
+
+  nav.toc{
+    position:sticky;
+    top:0;
+    align-self:start;
+    height:100vh;
+    overflow-y:auto;
+    padding:32px 12px 32px 24px;
+    font-size:13px;
+    border-right:1px solid var(--line);
+  }
+  nav.toc .toc-label{
+    color:var(--paper-faint);
+    font-size:11px;
+    letter-spacing:0.02em;
+    margin-bottom:14px;
+  }
+  nav.toc ol{
+    list-style:none;
+    margin:0; padding:0;
+    counter-reset:toc;
+  }
+  nav.toc li{margin-bottom:2px;}
+  nav.toc a{
+    display:block;
+    color:var(--paper-dim);
+    text-decoration:none;
+    padding:6px 10px;
+    border-radius:6px;
+    border-left:2px solid transparent;
+    transition:color .15s, border-color .15s, background .15s;
+  }
+  nav.toc a:hover{color:var(--paper); background:var(--ink-2);}
+  nav.toc a.active{
+    color:var(--gold);
+    border-left-color:var(--gold);
+    background:var(--ink-2);
+  }
+  nav.toc .toc-sub{padding-left:12px; opacity:.7; font-size:12px;}
+  nav.toc .toc-divider{height:1px; background:var(--line); margin:14px 4px;}
+
+  main{padding:0 24px 120px;}
+  .content-col{max-width:var(--maxw); margin:0 auto;}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    padding:72px 0 56px;
+    max-width:var(--maxw);
+    margin:0 auto;
+  }
+  .hero-kicker{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--gold);
+    margin-bottom:18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .hero-kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--gold); box-shadow:0 0 0 3px var(--gold-dim);}
+  .hero h1{
+    font-size:clamp(32px,5vw,46px);
+    line-height:1.08;
+    margin:0 0 20px;
+    letter-spacing:-0.01em;
+    font-weight:650;
+  }
+  .hero p.lede{
+    font-size:18px;
+    color:var(--paper-dim);
+    max-width:56ch;
+    margin:0 0 32px;
+  }
+  .hero-terminal{
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px 20px;
+    font-family:var(--mono);
+    font-size:14px;
+    color:var(--paper-dim);
+    overflow:hidden;
+    position:relative;
+  }
+  .hero-terminal .prompt{color:var(--gold);}
+  .hero-terminal .cursor{
+    display:inline-block; width:8px; height:15px; background:var(--gold);
+    vertical-align:-2px; animation:blink 1s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0;}}
+  #heroTypeLine{white-space:pre;}
+
+  .hero-goals{
+    margin-top:32px;
+    display:grid;
+    grid-template-columns: repeat(3,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  @media (max-width:560px){.hero-goals{grid-template-columns:1fr;}}
+  .hero-goals div{
+    background:var(--ink-2);
+    padding:16px 18px;
+    font-size:13px;
+    color:var(--paper-dim);
+  }
+  .hero-goals strong{display:block; color:var(--paper); font-size:14px; margin-bottom:4px;}
+
+  /* ---------- Concept map ---------- */
+  .map-section{max-width:960px; margin:0 auto; padding:20px 0 64px;}
+  .map-section h2{max-width:var(--maxw); margin-left:auto; margin-right:auto;}
+  .map-section > p{max-width:var(--maxw); margin-left:auto; margin-right:auto; color:var(--paper-dim);}
+  #conceptMap{width:100%; height:auto; display:block;}
+  .map-node{cursor:pointer;}
+  .map-node rect{
+    fill:var(--ink-2); stroke:var(--line); stroke-width:1.5px;
+    transition:fill .15s, stroke .15s;
+  }
+  .map-node:hover rect{stroke:var(--gold); fill:var(--ink-3);}
+  .map-node text{fill:var(--paper); font-family:var(--sans); font-size:12.5px;}
+  .map-node text.cluster{fill:var(--paper-faint); font-size:10.5px;}
+  .map-edge{stroke:var(--line); stroke-width:1.2px; fill:none;}
+
+  /* ---------- Section framework ---------- */
+  section.concept{
+    max-width:var(--maxw);
+    margin:0 auto;
+    padding:56px 0;
+    border-top:1px solid var(--line);
+    scroll-margin-top:24px;
+  }
+  section.concept .eyebrow{
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--paper-faint);
+    margin-bottom:10px;
+  }
+  section.concept h2{
+    font-size:26px;
+    margin:0 0 18px;
+    letter-spacing:-0.01em;
+  }
+  section.concept h3.sub{
+    font-size:14px;
+    text-transform:none;
+    color:var(--gold);
+    margin:34px 0 10px;
+    font-weight:600;
+  }
+  section.concept p{color:var(--paper-dim); margin:0 0 14px;}
+  section.concept p:first-of-type{color:var(--paper);}
+
+  .callout{
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--ink-2);
+    padding:16px 18px;
+    margin:18px 0;
+    font-size:14.5px;
+  }
+  .callout.tip{border-left:3px solid var(--blue);}
+  .callout.pitfall{border-left:3px solid var(--coral);}
+  .callout .callout-label{
+    font-family:var(--mono);
+    font-size:11.5px;
+    display:block;
+    margin-bottom:6px;
+  }
+  .callout.tip .callout-label{color:var(--blue);}
+  .callout.pitfall .callout-label{color:var(--coral);}
+
+  /* ---------- Code block ---------- */
+  .code-block{
+    position:relative;
+    background:#0b1013;
+    border:1px solid var(--line);
+    border-radius:10px;
+    margin:16px 0 22px;
+    overflow:hidden;
+  }
+  .code-block .code-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 14px;
+    border-bottom:1px solid var(--line);
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--paper-faint);
+  }
+  .code-block pre{
+    margin:0; padding:16px 18px;
+    overflow-x:auto;
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:1.65;
+    color:#cbd6da;
+  }
+  .code-block .kw{color:#e7b855;}
+  .code-block .str{color:#8fc9a6;}
+  .code-block .cm{color:#6b7a82; font-style:italic;}
+  .code-block .fn{color:#6fa8d8;}
+  .copy-btn{
+    background:transparent; border:1px solid var(--line);
+    color:var(--paper-dim); font-family:var(--mono); font-size:11px;
+    padding:4px 10px; border-radius:6px; cursor:pointer;
+    transition:border-color .15s, color .15s;
+  }
+  .copy-btn:hover{border-color:var(--gold); color:var(--gold);}
+  .copy-btn.copied{border-color:var(--blue); color:var(--blue);}
+
+  /* ---------- Widget frame ---------- */
+  .widget{
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--ink-2);
+    padding:20px;
+    margin:16px 0 24px;
+  }
+  .widget-label{
+    font-family:var(--mono); font-size:11px; color:var(--paper-faint);
+    margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .btn{
+    background:var(--ink-3);
+    border:1px solid var(--line);
+    color:var(--paper);
+    font-family:var(--sans);
+    font-size:13px;
+    padding:8px 14px;
+    border-radius:7px;
+    cursor:pointer;
+    transition:border-color .15s, background .15s, transform .08s;
+  }
+  .btn:hover{border-color:var(--gold); background:var(--ink-3);}
+  .btn:active{transform:scale(.97);}
+  .btn.primary{background:var(--gold-dim); border-color:var(--gold); color:#fff2d8;}
+  .btn.primary:hover{background:var(--gold-dim);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
+  input[type=text], input[type=number]{
+    background:var(--ink); border:1px solid var(--line); color:var(--paper);
+    font-family:var(--mono); font-size:13px; padding:8px 10px; border-radius:7px;
+    width:100%;
+  }
+  input[type=range]{width:100%; accent-color:var(--gold);}
+
+  .array-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+  .array-box{
+    font-family:var(--mono); font-size:13px;
+    border:1px solid var(--line); border-radius:7px;
+    padding:8px 12px; background:var(--ink);
+    transition:border-color .2s, background .2s;
+    position:relative;
+  }
+  .array-box .idx{position:absolute; top:-18px; left:2px; font-size:10px; color:var(--paper-faint);}
+  .array-box.hl{border-color:var(--gold); background:var(--gold-dim); color:#fff2d8;}
+  .array-box.new{animation:pop .4s ease;}
+  @keyframes pop{0%{transform:scale(.7); opacity:0;} 100%{transform:scale(1); opacity:1;}}
+
+  .kv-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  .kv-col{display:flex; flex-direction:column; gap:8px;}
+  .kv-item{
+    font-family:var(--mono); font-size:13px;
+    border:1px solid var(--line); border-radius:7px;
+    padding:8px 12px; background:var(--ink); cursor:pointer;
+    transition:border-color .15s;
+  }
+  .kv-item.hl{border-color:var(--gold); background:var(--gold-dim); color:#fff2d8;}
+  .kv-arrow-label{font-family:var(--mono); font-size:12px; color:var(--gold); text-align:center; margin-top:10px; min-height:18px;}
+
+  table.mini{
+    width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12.5px;
+  }
+  table.mini th, table.mini td{
+    border:1px solid var(--line); padding:7px 10px; text-align:left;
+  }
+  table.mini th{background:var(--ink-3); color:var(--gold); font-weight:600;}
+  table.mini td{color:var(--paper-dim);}
+
+  .stage-diagram{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:16px;}
+  .stage-node{
+    font-family:var(--mono); font-size:12.5px;
+    border:1px solid var(--line); border-radius:8px;
+    padding:10px 16px; background:var(--ink); cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .stage-node.active{border-color:var(--gold); background:var(--gold-dim); color:#fff2d8;}
+  .stage-arrow{color:var(--paper-faint); font-size:15px;}
+
+  .badge{
+    display:inline-block; padding:4px 12px; border-radius:20px;
+    font-family:var(--mono); font-size:13px; border:1px solid var(--line);
+  }
+
+  .file-view{
+    font-family:var(--mono); font-size:12.5px; background:var(--ink);
+    border:1px solid var(--line); border-radius:7px; padding:12px 14px;
+    min-height:70px; color:var(--paper-dim); white-space:pre-wrap; word-break:break-all;
+  }
+  .file-view .newline{color:var(--gold); animation:pop .3s ease;}
+
+  .split-cols{display:flex; gap:0; font-family:var(--mono); font-size:12.5px; margin-top:12px; flex-wrap:wrap;}
+  .split-col{flex:1; min-width:120px; border:1px solid var(--line); border-right:none; padding:8px 10px;}
+  .split-col:last-child{border-right:1px solid var(--line);}
+  .split-col .col-label{color:var(--gold); font-size:10.5px; margin-bottom:6px;}
+  .split-col.bad{color:var(--coral);}
+
+  /* ---------- Pipeline ---------- */
+  .pipeline-stage{
+    opacity:.35; transition:opacity .3s;
+  }
+  .pipeline-stage.active{opacity:1;}
+  .pipeline-stage rect{transition:stroke .3s, fill .3s;}
+  .pipeline-stage.active rect{stroke:var(--gold); fill:var(--ink-3);}
+  .pipeline-note{
+    min-height:52px;
+    font-size:13.5px; color:var(--paper-dim);
+    border-top:1px dashed var(--line);
+    padding-top:12px; margin-top:14px;
+  }
+
+  /* ---------- Footer / takeaways ---------- */
+  footer.finale{
+    max-width:var(--maxw); margin:0 auto; padding:56px 0 100px;
+    border-top:1px solid var(--line);
+  }
+  footer.finale h2{font-size:26px; margin-bottom:18px;}
+  footer.finale ul{padding-left:20px; color:var(--paper-dim);}
+  footer.finale li{margin-bottom:8px;}
+  .next-box{
+    margin-top:28px; padding:20px; border-radius:12px;
+    background:linear-gradient(135deg, var(--ink-2), var(--ink-3));
+    border:1px solid var(--line);
+  }
+  .next-box strong{color:var(--gold);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="toc" id="tocNav">
+    <div class="toc-label">CONTENTS</div>
+    <ol>
+      <li><a href="#hero" class="tocLink" data-target="hero">Introduction</a></li>
+      <li><a href="#map" class="tocLink" data-target="map">Concept map</a></li>
+      <li><a href="#c1" class="tocLink" data-target="c1">1. Lists</a></li>
+      <li><a href="#c2" class="tocLink" data-target="c2">2. Dictionaries</a></li>
+      <li><a href="#c3" class="tocLink" data-target="c3">3. List of dicts</a></li>
+      <li><a href="#c4" class="tocLink" data-target="c4">4. The quiz loop</a></li>
+      <li><a href="#c5" class="tocLink" data-target="c5">5. Session state</a></li>
+      <li><a href="#c6" class="tocLink" data-target="c6">6. State machine</a></li>
+      <li><a href="#c7" class="tocLink" data-target="c7">7. Shuffle & copy</a></li>
+      <li><a href="#c8" class="tocLink" data-target="c8">8. Scoring & rank</a></li>
+      <li><a href="#c9" class="tocLink" data-target="c9">9. Saving to file</a></li>
+      <li><a href="#c10" class="tocLink" data-target="c10">10. Parsing lines</a></li>
+      <li><a href="#c11" class="tocLink" data-target="c11">11. DataFrame table</a></li>
+      <li><a href="#c12" class="tocLink" data-target="c12">12. Full pipeline</a></li>
+      <li><div class="toc-divider"></div></li>
+      <li><a href="#finale" class="tocLink" data-target="finale">Takeaways</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <div class="hero" id="hero">
+      <div class="hero-kicker"><span class="dot"></span>PROJECT LEARNING NOTEBOOK</div>
+      <h1>Quiz Master Bot</h1>
+      <p class="lede">A Streamlit quiz app that asks questions, tracks score, hands out a rank, and saves results to a leaderboard. By the end you'll understand every piece well enough to have built it yourself.</p>
+      <div class="hero-terminal">
+        <span class="prompt">&gt;&gt;&gt;</span> <span id="heroTypeLine"></span><span class="cursor"></span>
+      </div>
+      <div class="hero-goals">
+        <div><strong>See it</strong>Twelve concepts, each with something to click, drag, or type — not just read.</div>
+        <div><strong>Build it</strong>Real code from <code>day.py</code> and <code>quiz.py</code>, explained line by line.</div>
+        <div><strong>Own it</strong>Understand the app well enough to extend it with new features.</div>
+      </div>
+    </div>
+
+    <div class="map-section" id="map">
+      <div class="eyebrow" style="max-width:var(--maxw); margin:0 auto; font-family:var(--mono); color:var(--paper-faint); font-size:12.5px;">THE LANDSCAPE</div>
+      <h2>Twelve ideas, four families</h2>
+      <p>Click any node to jump straight to that section. Data structures hold the questions, app state remembers where the player is, logic decides what happens next, and persistence keeps score between sessions.</p>
+      <svg id="conceptMap" viewBox="0 0 920 420" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- ============ 1. LISTS ============ -->
+    <section class="concept" id="c1">
+      <div class="eyebrow">CONCEPT 1 / DATA STRUCTURES</div>
+      <h2>Lists</h2>
+      <p>A list is an ordered box of items you can look up by position, add to, and measure.</p>
+      <p>Think of a list as a numbered coat rack: each hook has a fixed position starting at 0, and you can always ask "what's on hook 2?" or hang up one more coat at the end.</p>
+
+      <h3 class="sub">WHY IT MATTERS</h3>
+      <p>Every question in the quiz app lives inside a list — <code>QUIZ_BANK["Maths"]</code> is a list of questions. Without lists, you'd need a separate variable for every single question, which doesn't scale past three or four.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>fruits = ["apple", "banana", "cherry"]</span><span id="c1len">len = 3</span></div>
+        <div class="array-row" id="c1array"></div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="c1append()">fruits.append("orange")</button>
+          <button class="btn" onclick="c1index(0)">fruits[0]</button>
+          <button class="btn" onclick="c1index(1)">fruits[1]</button>
+          <button class="btn" onclick="c1reset()">reset</button>
+        </div>
+        <div class="kv-arrow-label" id="c1out">&nbsp;</div>
+      </div>
+
+      <h3 class="sub">CODE, FROM day.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>day.py</span><button class="copy-btn" onclick="copyCode(this,'c1code')">Copy</button></div>
+        <pre id="c1code"><span class="kw">fruits</span> = [<span class="str">"apple"</span>, <span class="str">"banana"</span>, <span class="str">"cherry"</span>]
+<span class="fn">print</span>(fruits[<span class="kw">0</span>])          <span class="cm"># apple — indexing starts at 0</span>
+fruits.append(<span class="str">"orange"</span>)  <span class="cm"># adds to the end</span>
+<span class="fn">print</span>(<span class="fn">len</span>(fruits))       <span class="cm"># 4</span></pre>
+      </div>
+
+      <div class="callout pitfall">
+        <span class="callout-label">PITFALL</span>
+        Asking for <code>fruits[3]</code> before appending will crash with <code>IndexError</code> — the list only has indices 0, 1, 2. Always check <code>len(fruits)</code> if you're not sure a position exists.
+      </div>
+    </section>
+
+    <!-- ============ 2. DICTIONARIES ============ -->
+    <section class="concept" id="c2">
+      <div class="eyebrow">CONCEPT 2 / DATA STRUCTURES</div>
+      <h2>Dictionaries as records</h2>
+      <p>A dictionary pairs a name (key) with a value, so you look things up by meaning instead of position.</p>
+      <p>It's a phone book: you don't remember your friend's number by "the fifth entry," you look them up by name. <code>capital["France"]</code> reads exactly like that lookup.</p>
+
+      <h3 class="sub">WHY IT MATTERS</h3>
+      <p>A single quiz question is naturally a record, not a list: <code>{"question": "...", "answer": "..."}</code>. Using a dict means the code always asks for <code>item["question"]</code> by name — clear, and impossible to mix up with the answer by accident.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>capital = {"France": "Paris", "Japan": "Tokyo"}</span></div>
+        <div class="kv-grid">
+          <div class="kv-col" id="c2keys"></div>
+          <div class="kv-col" id="c2vals"></div>
+        </div>
+        <div class="kv-arrow-label" id="c2out">Click a key on the left to look up its value →</div>
+      </div>
+
+      <h3 class="sub">CODE, FROM day.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>day.py</span><button class="copy-btn" onclick="copyCode(this,'c2code')">Copy</button></div>
+        <pre id="c2code"><span class="kw">capital</span> = {<span class="str">"France"</span>: <span class="str">"Paris"</span>, <span class="str">"Japan"</span>: <span class="str">"Tokyo"</span>}
+<span class="fn">print</span>(capital[<span class="str">"France"</span>])  <span class="cm"># Paris — lookup by key, not position</span></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        Looking up a missing key (<code>capital["Spain"]</code>) raises <code>KeyError</code>. The safe version is <code>capital.get("Spain", "unknown")</code>, which returns a fallback instead of crashing.
+      </div>
+    </section>
+
+    <!-- ============ 3. LIST OF DICTS ============ -->
+    <section class="concept" id="c3">
+      <div class="eyebrow">CONCEPT 3 / DATA STRUCTURES</div>
+      <h2>A list of dictionaries is a table</h2>
+      <p>Put several records in a list and you get exactly the shape of a spreadsheet: each row is a dict, each column is a key.</p>
+      <p>One dict is a single index card. A list of them is the whole card box — flip through it, and every card has the same two fields: question and answer.</p>
+
+      <h3 class="sub">WHY IT MATTERS</h3>
+      <p>This is the exact shape <code>QUIZ_BANK["Maths"]</code> uses in the real app: a list of eight dicts, each with a <code>"question"</code> and <code>"answer"</code> key. Zoom out from one record and you get the whole quiz bank.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span id="c3label">Single record</span></div>
+        <div id="c3single">
+          <div class="array-box" style="display:inline-block;">question: "What is 2 + 2?"<br>answer: "4"</div>
+        </div>
+        <table class="mini" id="c3table" style="display:none;">
+          <thead><tr><th>#</th><th>question</th><th>answer</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>What is 2 + 2?</td><td>4</td></tr>
+            <tr><td>1</td><td>Capital of Japan?</td><td>Tokyo</td></tr>
+            <tr><td>2</td><td>How many days in a week?</td><td>7</td></tr>
+          </tbody>
+        </table>
+        <div class="btn-row">
+          <button class="btn primary" onclick="c3toggle()">Zoom out to full list →</button>
+        </div>
+      </div>
+
+      <h3 class="sub">CODE, FROM day.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>day.py</span><button class="copy-btn" onclick="copyCode(this,'c3code')">Copy</button></div>
+        <pre id="c3code"><span class="kw">questions</span> = [
+    {<span class="str">"question"</span>: <span class="str">"What is 2 + 2?"</span>, <span class="str">"answer"</span>: <span class="str">"4"</span>},
+    {<span class="str">"question"</span>: <span class="str">"Capital of Japan?"</span>, <span class="str">"answer"</span>: <span class="str">"Tokyo"</span>},
+    {<span class="str">"question"</span>: <span class="str">"How many days in a week?"</span>, <span class="str">"answer"</span>: <span class="str">"7"</span>}
+]
+<span class="fn">print</span>(questions[<span class="kw">0</span>][<span class="str">"question"</span>])  <span class="cm"># first record's question</span></pre>
+      </div>
+
+      <div class="callout pitfall">
+        <span class="callout-label">PITFALL</span>
+        It's easy to write <code>questions["question"]</code> out of habit — but <code>questions</code> is a <em>list</em>, so it needs a numeric index first: <code>questions[0]["question"]</code>.
+      </div>
+    </section>
+
+    <!-- ============ 4. THE QUIZ LOOP ============ -->
+    <section class="concept" id="c4">
+      <div class="eyebrow">CONCEPT 4 / LOGIC</div>
+      <h2>The quiz loop</h2>
+      <p>A <code>for</code> loop walks through the list one record at a time, comparing the player's answer to the stored one.</p>
+      <p>It's the same motion as marking a stack of quizzes by hand: pick up the next paper, read the answer key, mark it right or wrong, move to the next one.</p>
+
+      <h3 class="sub">THE LOGIC, STEP BY STEP</h3>
+      <div class="widget">
+        <div class="widget-label"><span>for item in questions:</span><span id="c4score">score: 0 / 3</span></div>
+        <div id="c4current" style="font-family:var(--mono); font-size:14px; min-height:70px;"></div>
+        <div class="btn-row">
+          <button class="btn primary" id="c4correctBtn" onclick="c4answer(true)">Answer correctly</button>
+          <button class="btn" id="c4wrongBtn" onclick="c4answer(false)">Answer wrong</button>
+          <button class="btn" onclick="c4reset()">restart loop</button>
+        </div>
+      </div>
+
+      <h3 class="sub">CODE, FROM day.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>day.py</span><button class="copy-btn" onclick="copyCode(this,'c4code')">Copy</button></div>
+        <pre id="c4code"><span class="kw">for</span> item <span class="kw">in</span> questions:
+    user_answer = <span class="fn">input</span>(item[<span class="str">"question"</span>] + <span class="str">" "</span>)
+    <span class="kw">if</span> user_answer == item[<span class="str">"answer"</span>]:
+        <span class="fn">print</span>(<span class="str">"Correct!"</span>)
+    <span class="kw">else</span>:
+        <span class="fn">print</span>(<span class="str">"Wrong. The answer was"</span>, item[<span class="str">"answer"</span>])</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        In <code>quiz.py</code> this same comparison is done case-insensitively with <code>ans_input.lower() == current_q["answer"].lower()</code>, so typing "tokyo" still counts as correct.
+      </div>
+    </section>
+
+    <!-- ============ 5. SESSION STATE ============ -->
+    <section class="concept" id="c5">
+      <div class="eyebrow">CONCEPT 5 / APP STATE</div>
+      <h2>Streamlit session state</h2>
+      <p>Every click on a Streamlit app re-runs the entire script from top to bottom — so a normal variable resets to its starting value every time. <code>st.session_state</code> is the one thing that survives a rerun.</p>
+      <p>Imagine a whiteboard that gets wiped clean after every meeting, except for one sticky note in the corner marked "keep." Ordinary variables are the whiteboard; session state is the sticky note.</p>
+
+      <h3 class="sub">TRY IT — SIMULATE A RERUN</h3>
+      <div class="widget">
+        <div class="widget-label"><span>compare a plain variable to a session_state variable</span></div>
+        <div class="kv-grid">
+          <div class="kv-col">
+            <div style="font-family:var(--mono); font-size:12.5px; color:var(--paper-faint); margin-bottom:6px;">plain_count = 0</div>
+            <div class="array-box" id="c5plain" style="text-align:center; font-size:20px;">0</div>
+            <div class="btn-row"><button class="btn" onclick="c5inc('plain')">+1</button></div>
+          </div>
+          <div class="kv-col">
+            <div style="font-family:var(--mono); font-size:12.5px; color:var(--gold); margin-bottom:6px;">st.session_state.count = 0</div>
+            <div class="array-box" id="c5session" style="text-align:center; font-size:20px;">0</div>
+            <div class="btn-row"><button class="btn" onclick="c5inc('session')">+1</button></div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="c5rerun()">🔁 Simulate st.rerun()</button>
+        </div>
+        <div class="kv-arrow-label" id="c5out">&nbsp;</div>
+      </div>
+
+      <h3 class="sub">CODE, FROM quiz.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>quiz.py</span><button class="copy-btn" onclick="copyCode(this,'c5code')">Copy</button></div>
+        <pre id="c5code"><span class="kw">if</span> <span class="str">"score"</span> <span class="kw">not in</span> st.session_state:
+    st.session_state.score = <span class="kw">0</span>   <span class="cm"># only runs once, ever</span>
+
+<span class="cm"># later, inside a button click:</span>
+st.session_state.score += <span class="kw">1</span>
+st.rerun()  <span class="cm"># script restarts, but session_state.score keeps its value</span></pre>
+      </div>
+
+      <div class="callout pitfall">
+        <span class="callout-label">PITFALL</span>
+        <code>st.session_state.score = 0</code> written outside an <code>if "score" not in st.session_state:</code> guard would reset the score to zero on every single rerun — including the one triggered by the player's own click.
+      </div>
+    </section>
+
+    <!-- ============ 6. STATE MACHINE ============ -->
+    <section class="concept" id="c6">
+      <div class="eyebrow">CONCEPT 6 / APP STATE</div>
+      <h2>The state-machine pattern</h2>
+      <p>The whole app is one variable, <code>game_stage</code>, that's always exactly one of three values — and an <code>if / elif / elif</code> chain decides which screen to draw based on it.</p>
+      <p>It's a traffic light: only one color is ever on, and that one color determines what everyone on the road is allowed to do next.</p>
+
+      <h3 class="sub">CLICK A STAGE</h3>
+      <div class="widget">
+        <div class="widget-label"><span>st.session_state.game_stage</span></div>
+        <div class="stage-diagram">
+          <div class="stage-node active" id="stage-START" onclick="c6set('START')">START</div>
+          <span class="stage-arrow">→</span>
+          <div class="stage-node" id="stage-QUIZ" onclick="c6set('QUIZ')">QUIZ</div>
+          <span class="stage-arrow">→</span>
+          <div class="stage-node" id="stage-RESULTS" onclick="c6set('RESULTS')">RESULTS</div>
+          <span class="stage-arrow" style="margin-left:8px;">↻ back to START</span>
+        </div>
+        <div id="c6preview" style="font-family:var(--mono); font-size:13px; color:var(--paper-dim); min-height:64px; border-top:1px dashed var(--line); padding-top:12px;"></div>
+      </div>
+
+      <h3 class="sub">CODE, FROM quiz.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>quiz.py</span><button class="copy-btn" onclick="copyCode(this,'c6code')">Copy</button></div>
+        <pre id="c6code"><span class="kw">if</span> st.session_state.game_stage == <span class="str">"START"</span>:
+    <span class="cm"># show the name + category form</span>
+<span class="kw">elif</span> st.session_state.game_stage == <span class="str">"QUIZ"</span>:
+    <span class="cm"># show the current question</span>
+<span class="kw">elif</span> st.session_state.game_stage == <span class="str">"RESULTS"</span>:
+    <span class="cm"># show the final score and rank</span></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        Because only one branch of the <code>if/elif</code> chain ever runs, the three screens can never overlap or show at the same time — the stage variable is the single source of truth.
+      </div>
+    </section>
+
+    <!-- ============ 7. SHUFFLE & COPY ============ -->
+    <section class="concept" id="c7">
+      <div class="eyebrow">CONCEPT 7 / LOGIC</div>
+      <h2>Shuffling without breaking the original</h2>
+      <p><code>random.shuffle()</code> reorders a list in place — so the app always shuffles a <em>copy</em> of the question bank, never the original.</p>
+      <p>Think of the original quiz bank as a master answer key locked in a drawer. You photocopy it, shuffle the photocopy on your desk, and the master stays in order for the next player.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span id="c7modeLabel">mode: safe (.copy() first)</span></div>
+        <div class="kv-grid">
+          <div class="kv-col">
+            <div style="font-family:var(--mono); font-size:11.5px; color:var(--paper-faint); margin-bottom:6px;">QUIZ_BANK["Maths"] (original)</div>
+            <div id="c7orig"></div>
+          </div>
+          <div class="kv-col">
+            <div style="font-family:var(--mono); font-size:11.5px; color:var(--gold); margin-bottom:6px;">questions (working copy)</div>
+            <div id="c7copy"></div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="c7shuffle()">🔀 Shuffle</button>
+          <button class="btn" onclick="c7toggleMode()">Toggle: shuffle original directly (bug)</button>
+          <button class="btn" onclick="c7reset()">reset</button>
+        </div>
+        <div class="kv-arrow-label" id="c7out">&nbsp;</div>
+      </div>
+
+      <h3 class="sub">CODE, FROM quiz.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>quiz.py</span><button class="copy-btn" onclick="copyCode(this,'c7code')">Copy</button></div>
+        <pre id="c7code"><span class="kw">questions</span> = QUIZ_BANK[category].copy()  <span class="cm"># copy first!</span>
+random.shuffle(questions)             <span class="cm"># shuffles the copy only</span>
+st.session_state.questions = questions</pre>
+      </div>
+
+      <div class="callout pitfall">
+        <span class="callout-label">PITFALL</span>
+        Drop the <code>.copy()</code> and <code>random.shuffle(QUIZ_BANK[category])</code> shuffles the master bank itself — every future player then gets a permanently reordered question set, and repeated plays slowly scramble your source data.
+      </div>
+    </section>
+
+    <!-- ============ 8. SCORING & RANK ============ -->
+    <section class="concept" id="c8">
+      <div class="eyebrow">CONCEPT 8 / LOGIC</div>
+      <h2>Turning a percentage into a rank</h2>
+      <p>A chain of <code>if / elif</code> comparisons converts a single number — percentage correct — into a badge the player can be proud of (or motivated by).</p>
+      <p>It's exactly like exam grade boundaries: 90 and above is an A, 80 and above a B — the same idea, just with quiz-master badges instead of letters.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>percentage</span><span id="c8pct">75%</span></div>
+        <input type="range" min="0" max="100" value="75" id="c8slider" oninput="c8update(this.value)">
+        <div style="margin-top:16px; text-align:center;">
+          <span class="badge" id="c8badge" style="font-size:16px; padding:8px 20px;">🥇 Quiz Expert</span>
+        </div>
+      </div>
+
+      <h3 class="sub">CODE, FROM quiz.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>quiz.py</span><button class="copy-btn" onclick="copyCode(this,'c8code')">Copy</button></div>
+        <pre id="c8code"><span class="kw">def</span> <span class="fn">get_rank</span>(percentage):
+    <span class="kw">if</span> percentage == <span class="kw">100</span>:
+        <span class="kw">return</span> <span class="str">"🏆 Grandmaster"</span>
+    <span class="kw">elif</span> percentage &gt;= <span class="kw">75</span>:
+        <span class="kw">return</span> <span class="str">"🥇 Quiz Expert"</span>
+    <span class="kw">elif</span> percentage &gt;= <span class="kw">50</span>:
+        <span class="kw">return</span> <span class="str">"🥈 Knowledge Seeker"</span>
+    <span class="kw">else</span>:
+        <span class="kw">return</span> <span class="str">"🥉 Rookie"</span></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        Order matters here: because <code>100</code> is checked first, a perfect score never falls through to the <code>&gt;= 75</code> branch. Reordering these checks would quietly change who gets Grandmaster.
+      </div>
+    </section>
+
+    <!-- ============ 9. FILE SAVING ============ -->
+    <section class="concept" id="c9">
+      <div class="eyebrow">CONCEPT 9 / PERSISTENCE</div>
+      <h2>Saving scores to a file</h2>
+      <p>Opening a file in <code>"a"</code> (append) mode adds a new line without touching what's already there; <code>"w"</code> (write/overwrite) mode erases the file first.</p>
+      <p>Append mode is a guestbook — every visitor adds a line, nobody erases the ones before. Overwrite mode is a whiteboard — writing on it wipes whatever was there.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span>scores.txt</span></div>
+        <div class="file-view" id="c9file">alex | Maths | 8/8 | Rank: 🏆 Grandmaster</div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="c9write('a')">open(file, "a") → write line</button>
+          <button class="btn" onclick="c9write('w')">open(file, "w") → write line</button>
+          <button class="btn" onclick="c9reset()">reset</button>
+        </div>
+        <div class="kv-arrow-label" id="c9out">&nbsp;</div>
+      </div>
+
+      <h3 class="sub">CODE, FROM quiz.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>quiz.py</span><button class="copy-btn" onclick="copyCode(this,'c9code')">Copy</button></div>
+        <pre id="c9code"><span class="kw">def</span> <span class="fn">save_score</span>(player_name, score, total, category, rank):
+    <span class="kw">with</span> <span class="fn">open</span>(FILE_NAME, <span class="str">"a"</span>, encoding=<span class="str">"utf-8"</span>) <span class="kw">as</span> file:
+        file.write(<span class="fn">f</span><span class="str">"{player_name} | {category} | {score}/{total} | Rank: {rank}\n"</span>)</pre>
+      </div>
+
+      <div class="callout pitfall">
+        <span class="callout-label">PITFALL</span>
+        If <code>save_score</code> used <code>"w"</code> instead of <code>"a"</code>, every new player would erase the entire leaderboard and leave only their own score — that's exactly what turns a guestbook into a whiteboard by accident.
+      </div>
+    </section>
+
+    <!-- ============ 10. PARSING LINES ============ -->
+    <section class="concept" id="c10">
+      <div class="eyebrow">CONCEPT 10 / PERSISTENCE</div>
+      <h2>Parsing saved lines back into data</h2>
+      <p>A plain text file only stores characters — <code>.split(" | ")</code> turns a line back into separate fields, and a length check filters out lines that don't fit the expected shape.</p>
+
+      <h3 class="sub">TRY IT — EDIT THE LINE</h3>
+      <div class="widget">
+        <div class="widget-label"><span>s.split(" | ")</span></div>
+        <input type="text" id="c10input" value="alex | Maths | 8/8 | Rank: 🏆 Grandmaster" oninput="c10update()">
+        <div class="split-cols" id="c10cols"></div>
+        <div class="btn-row">
+          <button class="btn" onclick="c10setLine('Sam scored 3')">try: "Sam scored 3"</button>
+          <button class="btn" onclick="c10setLine('alex | Maths | 8/8 | Rank: 🏆 Grandmaster')">try: valid line</button>
+        </div>
+        <div class="kv-arrow-label" id="c10out">&nbsp;</div>
+      </div>
+
+      <h3 class="sub">CODE, FROM quiz.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>quiz.py</span><button class="copy-btn" onclick="copyCode(this,'c10code')">Copy</button></div>
+        <pre id="c10code">parsed_data = [s.split(<span class="str">" | "</span>) <span class="kw">for</span> s <span class="kw">in</span> scores
+               <span class="kw">if</span> <span class="fn">len</span>(s.split(<span class="str">" | "</span>)) == <span class="kw">4</span>]  <span class="cm"># drop malformed lines</span></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        This is exactly why <code>scores.txt</code>'s stray lines like <code>"Sam scored 3"</code> and <code>"A new scored line"</code> never crash the sidebar — they don't split into 4 pieces, so the guard silently skips them instead of raising an error.
+      </div>
+    </section>
+
+    <!-- ============ 11. DATAFRAME ============ -->
+    <section class="concept" id="c11">
+      <div class="eyebrow">CONCEPT 11 / PERSISTENCE</div>
+      <h2>Rendering data as a table</h2>
+      <p>Once the file lines are parsed into a list of lists, <code>pandas.DataFrame</code> turns that raw data into a labeled, scrollable table — the leaderboard the sidebar actually shows.</p>
+
+      <h3 class="sub">TRY IT</h3>
+      <div class="widget">
+        <div class="widget-label"><span id="c11label">raw parsed_data (list of lists)</span></div>
+        <div id="c11raw" class="file-view">['alex', 'Maths', '8/8', 'Rank: 🏆 Grandmaster']</div>
+        <table class="mini" id="c11table" style="display:none;">
+          <thead><tr><th>Player</th><th>Category</th><th>Score</th><th>Rank</th></tr></thead>
+          <tbody><tr><td>alex</td><td>Maths</td><td>8/8</td><td>Rank: 🏆 Grandmaster</td></tr></tbody>
+        </table>
+        <div class="btn-row">
+          <button class="btn primary" onclick="c11toggle()">pd.DataFrame(parsed_data, columns=[...]) →</button>
+        </div>
+      </div>
+
+      <h3 class="sub">CODE, FROM quiz.py</h3>
+      <div class="code-block">
+        <div class="code-head"><span>quiz.py</span><button class="copy-btn" onclick="copyCode(this,'c11code')">Copy</button></div>
+        <pre id="c11code">df = pd.DataFrame(parsed_data, columns=[<span class="str">"Player"</span>, <span class="str">"Category"</span>, <span class="str">"Score"</span>, <span class="str">"Rank"</span>])
+st.sidebar.dataframe(df, hide_index=<span class="kw">True</span>, use_container_width=<span class="kw">True</span>)</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-label">PRO TIP</span>
+        The column names passed to <code>DataFrame</code> must be in the same order as the split values — mismatch them and every player's category would show up under "Score" instead.
+      </div>
+    </section>
+
+    <!-- ============ 12. FULL PIPELINE ============ -->
+    <section class="concept" id="c12">
+      <div class="eyebrow">HOW IT ALL FITS TOGETHER</div>
+      <h2>The full pipeline</h2>
+      <p>Every concept above is one stage in a single round of play. Step through it to see how a player's click turns into a saved leaderboard entry.</p>
+
+      <div class="widget">
+        <svg id="pipelineSvg" viewBox="0 0 640 130" style="width:100%; height:auto;"></svg>
+        <div class="pipeline-note" id="pipelineNote">Press "Start" to walk through one full round.</div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="pipeStep()">▶ Start / Next step</button>
+          <button class="btn" onclick="pipeReset()">reset</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="finale" id="finale">
+      <h2>Key takeaways</h2>
+      <ul>
+        <li><strong>Data shape drives everything.</strong> A list of dictionaries is what lets one <code>for</code> loop handle any number of questions, in any category, without special-casing.</li>
+        <li><strong>State needs a home.</strong> Streamlit reruns the whole script on every interaction — <code>session_state</code> is what lets the app remember the score, the stage, and the current question across those reruns.</li>
+        <li><strong>One variable, one truth.</strong> The <code>game_stage</code> pattern keeps the START/QUIZ/RESULTS screens from ever overlapping or getting out of sync.</li>
+        <li><strong>Files are just text.</strong> Saving is one formatted line appended per player; loading is splitting those lines back apart and defensively skipping anything malformed.</li>
+      </ul>
+      <div class="next-box">
+        <strong>What this unlocks next:</strong> the same three patterns — structured data, a state machine, and simple file persistence — are the backbone of almost every small interactive tool you'll build next, from a to-do app to a full multi-user game. You already know them.
+      </div>
+    </footer>
+  </main>
+</div>
+
+<script>
+/* ---------------- TOC active highlighting ---------------- */
+(function(){
+  const links = document.querySelectorAll('.tocLink');
+  const map = {};
+  links.forEach(l => map[l.dataset.target] = l);
+  const targets = document.querySelectorAll('main [id]');
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        links.forEach(l=>l.classList.remove('active'));
+        const l = map[e.target.id];
+        if(l) l.classList.add('active');
+      }
+    });
+  }, {rootMargin:"-20% 0px -70% 0px"});
+  targets.forEach(t=>obs.observe(t));
+})();
+
+/* ---------------- Hero typing effect ---------------- */
+(function(){
+  const line = "run quiz_master_bot.py";
+  const el = document.getElementById('heroTypeLine');
+  let i=0;
+  function tick(){
+    if(i<=line.length){
+      el.textContent = line.slice(0,i);
+      i++;
+      setTimeout(tick, 55);
+    }
+  }
+  tick();
+})();
+
+/* ---------------- Copy buttons ---------------- */
+function copyCode(btn, preId){
+  const text = document.getElementById(preId).innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig = btn.textContent;
+    btn.textContent = "Copied";
+    btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent = orig; btn.classList.remove('copied'); }, 1400);
+  }).catch(()=>{});
+}
+
+/* ---------------- Concept map ---------------- */
+(function(){
+  const svg = document.getElementById('conceptMap');
+  const clusters = [
+    {name:"DATA STRUCTURES", x:40, nodes:[["1. Lists","c1"],["2. Dictionaries","c2"],["3. List of dicts","c3"]]},
+    {name:"LOGIC", x:270, nodes:[["4. Quiz loop","c4"],["7. Shuffle & copy","c7"],["8. Scoring & rank","c8"]]},
+    {name:"APP STATE", x:500, nodes:[["5. Session state","c5"],["6. State machine","c6"]]},
+    {name:"PERSISTENCE", x:700, nodes:[["9. Saving to file","c9"],["10. Parsing lines","c10"],["11. DataFrame","c11"]]},
+  ];
+  let svgHtml = "";
+  clusters.forEach(cl=>{
+    svgHtml += `<text class="cluster" x="${cl.x}" y="24">${cl.name}</text>`;
+    cl.nodes.forEach((n,i)=>{
+      const y = 50 + i*60;
+      svgHtml += `<g class="map-node" onclick="document.getElementById('${n[1]}').scrollIntoView({behavior:'smooth'})">
+        <rect x="${cl.x}" y="${y}" width="180" height="40" rx="8"></rect>
+        <text x="${cl.x+14}" y="${y+25}">${n[0]}</text>
+      </g>`;
+    });
+  });
+  svgHtml += `<g class="map-node" onclick="document.getElementById('c12').scrollIntoView({behavior:'smooth'})">
+    <rect x="370" y="330" width="180" height="40" rx="8"></rect>
+    <text x="384" y="355">12. Full pipeline</text>
+  </g>`;
+  svg.innerHTML = svgHtml;
+})();
+
+/* ---------------- C1: Lists ---------------- */
+let c1data = ["apple","banana","cherry"];
+function c1render(){
+  const row = document.getElementById('c1array');
+  row.innerHTML = c1data.map((f,i)=>`<div class="array-box" id="c1box${i}"><span class="idx">${i}</span>"${f}"</div>`).join('');
+  document.getElementById('c1len').textContent = "len = "+c1data.length;
+}
+function c1append(){
+  c1data.push("orange");
+  c1render();
+  const box = document.getElementById('c1box'+(c1data.length-1));
+  if(box) box.classList.add('new','hl');
+  document.getElementById('c1out').textContent = 'fruits is now ['+c1data.map(f=>'"'+f+'"').join(', ')+']';
+  setTimeout(()=>{ if(box) box.classList.remove('hl'); }, 900);
+}
+function c1index(i){
+  document.querySelectorAll('#c1array .array-box').forEach(b=>b.classList.remove('hl'));
+  const box = document.getElementById('c1box'+i);
+  if(box) box.classList.add('hl');
+  document.getElementById('c1out').textContent = 'fruits['+i+'] → "'+c1data[i]+'"';
+}
+function c1reset(){ c1data=["apple","banana","cherry"]; c1render(); document.getElementById('c1out').textContent='\u00A0'; }
+c1render();
+
+/* ---------------- C2: Dict lookup ---------------- */
+const c2data = {"France":"Paris","Japan":"Tokyo"};
+function c2render(){
+  const keys = Object.keys(c2data);
+  document.getElementById('c2keys').innerHTML = keys.map(k=>`<div class="kv-item" id="c2k-${k}" onclick="c2look('${k}')">"${k}"</div>`).join('');
+  document.getElementById('c2vals').innerHTML = keys.map(k=>`<div class="kv-item" id="c2v-${k}">"${c2data[k]}"</div>`).join('');
+}
+function c2look(k){
+  document.querySelectorAll('.kv-item').forEach(el=>el.classList.remove('hl'));
+  document.getElementById('c2k-'+k).classList.add('hl');
+  document.getElementById('c2v-'+k).classList.add('hl');
+  document.getElementById('c2out').textContent = 'capital["'+k+'"] → "'+c2data[k]+'"';
+}
+c2render();
+
+/* ---------------- C3: List of dicts toggle ---------------- */
+let c3expanded = false;
+function c3toggle(){
+  c3expanded = !c3expanded;
+  document.getElementById('c3single').style.display = c3expanded ? 'none' : 'block';
+  document.getElementById('c3table').style.display = c3expanded ? 'table' : 'none';
+  document.getElementById('c3label').textContent = c3expanded ? 'Full list — questions[0]["question"] style access' : 'Single record';
+  document.querySelector('#c3 .btn.primary').textContent = c3expanded ? '← Zoom back to single record' : 'Zoom out to full list →';
+}
+
+/* ---------------- C4: Quiz loop stepper ---------------- */
+const c4questions = [
+  {q:"What is 2 + 2?", a:"4"},
+  {q:"Capital of Japan?", a:"Tokyo"},
+  {q:"How many days in a week?", a:"7"}
+];
+let c4idx = 0, c4score = 0;
+function c4render(){
+  const el = document.getElementById('c4current');
+  document.getElementById('c4score').textContent = 'score: '+c4score+' / '+c4questions.length;
+  if(c4idx >= c4questions.length){
+    el.innerHTML = '<span style="color:var(--gold);">Loop finished.</span> Final score: '+c4score+' / '+c4questions.length;
+    document.getElementById('c4correctBtn').disabled = true;
+    document.getElementById('c4wrongBtn').disabled = true;
+    return;
+  }
+  document.getElementById('c4correctBtn').disabled = false;
+  document.getElementById('c4wrongBtn').disabled = false;
+  const item = c4questions[c4idx];
+  el.innerHTML = '<span style="color:var(--paper-faint);">item = questions['+c4idx+']</span><br>question: "'+item.q+'"<br>correct answer: "'+item.a+'"';
+}
+function c4answer(correct){
+  if(c4idx >= c4questions.length) return;
+  if(correct) c4score++;
+  c4idx++;
+  c4render();
+}
+function c4reset(){ c4idx=0; c4score=0; c4render(); }
+c4render();
+
+/* ---------------- C5: Session state vs plain ---------------- */
+let c5plainVal = 0, c5sessionVal = 0;
+function c5inc(kind){
+  if(kind==='plain') c5plainVal++; else c5sessionVal++;
+  document.getElementById('c5plain').textContent = c5plainVal;
+  document.getElementById('c5session').textContent = c5sessionVal;
+  document.getElementById('c5out').textContent = '\u00A0';
+}
+function c5rerun(){
+  c5plainVal = 0; // simulate script restart resetting a plain variable
+  document.getElementById('c5plain').textContent = c5plainVal;
+  document.getElementById('c5plain').classList.add('new');
+  setTimeout(()=>document.getElementById('c5plain').classList.remove('new'), 400);
+  document.getElementById('c5out').textContent = 'Rerun happened → plain_count reset to 0, but session_state.count stayed '+c5sessionVal+'.';
+}
+
+/* ---------------- C6: State machine ---------------- */
+const c6previews = {
+  START: 'Player name: [_________]\nCategory: [ Maths ▾ ]\n[ 🚀 Start Quiz ]',
+  QUIZ: 'Question 2 of 8 (Maths)\n❓ What is 5 * 6?\nYour Answer: [_________]  [ Submit ]',
+  RESULTS: 'Final Score: 7/8   Accuracy: 88%\nRank Awarded: 🥇 Quiz Expert\n[ Play Again 🔄 ]'
+};
+function c6set(stage){
+  document.querySelectorAll('.stage-node').forEach(n=>n.classList.remove('active'));
+  document.getElementById('stage-'+stage).classList.add('active');
+  document.getElementById('c6preview').textContent = c6previews[stage];
+}
+c6set('START');
+
+/* ---------------- C7: Shuffle & copy ---------------- */
+let c7orig = ["Q0: 2+2?","Q1: Capital?","Q2: Days?"];
+let c7copy = c7orig.slice();
+let c7safeMode = true;
+function c7renderRow(id, arr){
+  document.getElementById(id).innerHTML = arr.map(x=>`<div class="array-box" style="display:block; margin-bottom:6px;">${x}</div>`).join('');
+}
+function c7render(){
+  c7renderRow('c7orig', c7orig);
+  c7renderRow('c7copy', c7copy);
+  document.getElementById('c7modeLabel').textContent = c7safeMode ? 'mode: safe (.copy() first)' : 'mode: buggy (shuffles original directly)';
+}
+function shuffleArr(a){
+  const arr = a.slice();
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+function c7shuffle(){
+  if(c7safeMode){
+    c7copy = shuffleArr(c7copy);
+    document.getElementById('c7out').textContent = 'Only the working copy changed order — the original bank is untouched.';
+  } else {
+    c7orig = shuffleArr(c7orig);
+    c7copy = c7orig.slice();
+    document.getElementById('c7out').textContent = 'Bug: the original QUIZ_BANK itself just got reordered permanently.';
+  }
+  c7render();
+}
+function c7toggleMode(){
+  c7safeMode = !c7safeMode;
+  c7render();
+  document.getElementById('c7out').textContent = '\u00A0';
+}
+function c7reset(){
+  c7orig = ["Q0: 2+2?","Q1: Capital?","Q2: Days?"];
+  c7copy = c7orig.slice();
+  c7safeMode = true;
+  c7render();
+  document.getElementById('c7out').textContent = '\u00A0';
+}
+c7render();
+
+/* ---------------- C8: Rank slider ---------------- */
+function c8rank(p){
+  if(p==100) return "🏆 Grandmaster";
+  if(p>=75) return "🥇 Quiz Expert";
+  if(p>=50) return "🥈 Knowledge Seeker";
+  return "🥉 Rookie";
+}
+function c8update(v){
+  document.getElementById('c8pct').textContent = v+'%';
+  document.getElementById('c8badge').textContent = c8rank(parseInt(v));
+}
+c8update(75);
+
+/* ---------------- C9: File append vs overwrite ---------------- */
+let c9lines = ['alex | Maths | 8/8 | Rank: 🏆 Grandmaster'];
+let c9counter = 1;
+function c9render(){
+  document.getElementById('c9file').innerHTML = c9lines.map(l=>'<span class="newline">'+l+'</span>').join('\n');
+}
+function c9write(mode){
+  const names = ['jordan','priya','sam','riley'];
+  const name = names[c9counter % names.length];
+  const line = name+' | Geography | 6/8 | Rank: 🥇 Quiz Expert';
+  c9counter++;
+  if(mode === 'a'){
+    c9lines.push(line);
+    document.getElementById('c9out').textContent = 'Append mode: new line added, everything before it stayed.';
+  } else {
+    c9lines = [line];
+    document.getElementById('c9out').textContent = 'Overwrite mode: the file was erased first — only the new line survives.';
+  }
+  c9render();
+}
+function c9reset(){
+  c9lines = ['alex | Maths | 8/8 | Rank: 🏆 Grandmaster'];
+  c9counter = 1;
+  c9render();
+  document.getElementById('c9out').textContent = '\u00A0';
+}
+c9render();
+
+/* ---------------- C10: Parsing ---------------- */
+function c10update(){
+  const val = document.getElementById('c10input').value;
+  const parts = val.split(" | ");
+  const cols = document.getElementById('c10cols');
+  if(parts.length === 4){
+    cols.innerHTML = ['Player','Category','Score','Rank'].map((label,i)=>
+      `<div class="split-col"><div class="col-label">${label}</div>${parts[i]}</div>`).join('');
+    document.getElementById('c10out').textContent = 'len(parts) == 4 → kept. This line enters the leaderboard table.';
+  } else {
+    cols.innerHTML = `<div class="split-col bad"><div class="col-label">RESULT</div>splits into ${parts.length} piece(s), not 4</div>`;
+    document.getElementById('c10out').textContent = 'len(parts) != 4 → the guard silently drops this line. No crash, no leaderboard row.';
+  }
+}
+function c10setLine(v){
+  document.getElementById('c10input').value = v;
+  c10update();
+}
+c10update();
+
+/* ---------------- C11: DataFrame toggle ---------------- */
+let c11expanded = false;
+function c11toggle(){
+  c11expanded = !c11expanded;
+  document.getElementById('c11raw').style.display = c11expanded ? 'none' : 'block';
+  document.getElementById('c11table').style.display = c11expanded ? 'table' : 'none';
+  document.getElementById('c11label').textContent = c11expanded ? 'st.sidebar.dataframe(df) — rendered table' : 'raw parsed_data (list of lists)';
+  document.querySelector('#c11 .btn.primary').textContent = c11expanded ? '← back to raw list' : 'pd.DataFrame(parsed_data, columns=[...]) →';
+}
+
+/* ---------------- C12: Pipeline ---------------- */
+const pipeStages = [
+  {label:"Player input", note:"The player types an answer and clicks Submit — this triggers a rerun of the whole script."},
+  {label:"Session state", note:"st.session_state.score and .current_index hold their values across that rerun, so progress isn't lost."},
+  {label:"Stage transition", note:"When the last question is answered, game_stage flips from \"QUIZ\" to \"RESULTS\", switching which screen renders."},
+  {label:"Scoring", note:"get_rank(percentage) converts the final score into a badge like 🥇 Quiz Expert."},
+  {label:"File save", note:"save_score() appends one formatted line — name, category, score, rank — to scores.txt."},
+  {label:"Leaderboard reload", note:"On the next rerun, the sidebar reads scores.txt, splits each line, filters malformed ones, and renders the DataFrame."}
+];
+let pipeIdx = -1;
+function pipeRenderSvg(){
+  const svg = document.getElementById('pipelineSvg');
+  let html = '';
+  const w = 100, gap = 8, startX = 5;
+  pipeStages.forEach((s,i)=>{
+    const x = startX + i*(w+gap);
+    html += `<g class="pipeline-stage" id="pipe-${i}">
+      <rect x="${x}" y="20" width="${w}" height="60" rx="8" fill="var(--ink)" stroke="var(--line)"></rect>
+      <text x="${x+w/2}" y="45" text-anchor="middle" font-size="10.5" fill="var(--paper)" font-family="var(--sans)">${s.label.split(' ')[0]}</text>
+      <text x="${x+w/2}" y="60" text-anchor="middle" font-size="10.5" fill="var(--paper)" font-family="var(--sans)">${s.label.split(' ').slice(1).join(' ')}</text>
+    </g>`;
+    if(i < pipeStages.length-1){
+      html += `<text x="${x+w+2}" y="55" fill="var(--paper-faint)" font-size="14">→</text>`;
+    }
+  });
+  svg.innerHTML = html;
+}
+function pipeStep(){
+  pipeIdx++;
+  if(pipeIdx >= pipeStages.length){ pipeIdx = pipeStages.length-1; }
+  document.querySelectorAll('.pipeline-stage').forEach((el,i)=>{
+    el.classList.toggle('active', i<=pipeIdx);
+  });
+  document.getElementById('pipelineNote').textContent = pipeStages[pipeIdx].label+' — '+pipeStages[pipeIdx].note;
+}
+function pipeReset(){
+  pipeIdx = -1;
+  document.querySelectorAll('.pipeline-stage').forEach(el=>el.classList.remove('active'));
+  document.getElementById('pipelineNote').textContent = 'Press "Start" to walk through one full round.';
+}
+pipeRenderSvg();
+</script>
+</body>
+</html>
