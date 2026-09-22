@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentiment Analyzer Agent — Interactive Notebook</title>
+<style>
+:root{
+  --ink:#0a0a0f;--ink-2:#101018;--ink-3:#16161f;--card:#14141d;--line:#26263a;--line-2:#32324a;
+  --gold:#c8a84b;--gold-2:#e0c46e;--gold-dim:#7d6a30;--teal:#1a5c52;--teal-2:#2a8a7a;--teal-bright:#3fb8a0;
+  --text:#e9e7e2;--text-2:#b6b3ab;--text-3:#807d76;--pos:#3fb8a0;--neg:#e0705f;
+  --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{background:var(--ink);color:var(--text);font-family:var(--sans);font-size:16.5px;line-height:1.72;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(900px 600px at 12% -5%,rgba(26,92,82,.18),transparent 65%),
+  radial-gradient(800px 500px at 95% 8%,rgba(200,168,75,.09),transparent 60%);}
+a{color:var(--gold-2);text-decoration:none}a:hover{text-decoration:underline}
+#readProgress{position:fixed;top:0;left:0;height:3px;width:0%;background:linear-gradient(90deg,var(--teal-2),var(--gold));z-index:200;transition:width .12s}
+
+.toc{position:fixed;top:0;left:0;width:270px;height:100vh;background:linear-gradient(180deg,#0c0c13,#0a0a0f);
+  border-right:1px solid var(--line);padding:26px 18px 40px;overflow-y:auto;z-index:120;transition:transform .3s}
+.toc::-webkit-scrollbar{width:6px}.toc::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
+.toc-brand{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.toc-brand .dot{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+.toc-brand h1{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.toc-sub{font-size:11.5px;color:var(--text-3);margin-bottom:22px}
+.toc a{display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:9px;color:var(--text-2);
+  font-size:13.4px;transition:all .18s;border-left:2px solid transparent}
+.toc a:hover{background:var(--ink-3);color:var(--text);text-decoration:none}
+.toc a.active{background:rgba(200,168,75,.10);color:var(--gold-2);border-left-color:var(--gold)}
+.toc a .num{font-family:var(--mono);font-size:10.5px;color:var(--text-3);min-width:16px;text-align:center}
+.toc a.active .num{color:var(--gold)}
+.toc-divider{height:1px;background:var(--line);margin:14px 8px}
+.toc-toggle{position:fixed;top:14px;left:14px;z-index:130;display:none;width:44px;height:44px;border-radius:12px;
+  border:1px solid var(--line-2);background:var(--card);color:var(--gold);font-size:19px;cursor:pointer}
+.toc-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:110;opacity:0;pointer-events:none;transition:opacity .3s}
+.toc-backdrop.show{opacity:1;pointer-events:auto}
+
+main{margin-left:270px;position:relative;z-index:1;max-width:1000px;padding:0 34px 120px}
+section{padding:70px 0 18px;scroll-margin-top:70px}
+@media(max-width:900px){.toc{transform:translateX(-100%);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+  .toc.open{transform:translateX(0)}.toc-toggle{display:block}main{margin-left:0;padding:0 18px 100px}
+  section{padding:54px 0 14px}body{font-size:16px}}
+
+#hero{padding-top:96px;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold-dim);
+  border-radius:100px;padding:6px 16px;margin-bottom:26px;background:rgba(200,168,75,.06)}
+.hero-badge .pulse{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+#hero h2{font-size:clamp(2.1rem,5.4vw,3.4rem);line-height:1.1;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(120deg,#fff 15%,var(--gold-2) 55%,var(--teal-bright) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:20px}
+.hero-emoji{font-size:clamp(2.6rem,7vw,4rem);display:block;margin-bottom:6px;filter:drop-shadow(0 0 22px rgba(200,168,75,.35))}
+#hero .lede{font-size:clamp(1.02rem,2.1vw,1.2rem);color:var(--text-2);max-width:660px;margin:0 auto 14px}
+#hero .lede strong{color:var(--text)}
+.hero-promise{max-width:700px;margin:32px auto 0;text-align:left;
+  background:linear-gradient(135deg,rgba(26,92,82,.20),rgba(20,20,29,.6));border:1px solid var(--line-2);
+  border-radius:14px;padding:22px 26px}
+.hero-promise h3{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-bright);margin-bottom:12px}
+.hero-promise ul{list-style:none;display:grid;gap:9px}
+.hero-promise li{display:flex;gap:11px;font-size:15px;color:var(--text-2);align-items:flex-start}
+.hero-promise li::before{content:"▸";color:var(--gold);font-weight:700;flex-shrink:0}
+.hero-stats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+.hstat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 22px;min-width:118px}
+.hstat .v{font-family:var(--mono);font-size:1.5rem;font-weight:700;color:var(--gold-2);line-height:1.1}
+.hstat .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-top:5px}
+
+.sec-head{margin-bottom:30px}
+.sec-kicker{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--teal-bright);margin-bottom:12px}
+.sec-kicker .bar{width:26px;height:2px;background:var(--teal-2);display:inline-block}
+h3.sec-title{font-size:clamp(1.5rem,3.6vw,2.05rem);font-weight:750;letter-spacing:-.015em;line-height:1.2;color:#fff}
+h3.sec-title .accent{color:var(--gold-2)}
+.sec-desc{color:var(--text-2);margin-top:11px;font-size:16.5px;max-width:76ch}
+h4.block{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin:36px 0 13px;
+  display:flex;align-items:center;gap:10px;font-weight:700}
+h4.block::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line-2),transparent)}
+p{margin-bottom:15px;color:var(--text-2)}p strong{color:var(--text);font-weight:650}
+code.inline{font-family:var(--mono);font-size:.855em;background:var(--ink-3);border:1px solid var(--line);
+  border-radius:5px;padding:1.5px 6px;color:var(--gold-2);white-space:nowrap}
+
+.callout{border-radius:12px;padding:17px 20px;margin:20px 0;border:1px solid var(--line-2);background:var(--card);position:relative;overflow:hidden}
+.callout::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
+.callout .co-title{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.callout p{margin:0;font-size:15.3px;color:var(--text-2)}.callout p+p{margin-top:9px}
+.callout.tip{background:linear-gradient(135deg,rgba(26,92,82,.18),var(--card))}
+.callout.tip::before{background:var(--teal-2)}.callout.tip .co-title{color:var(--teal-bright)}
+.callout.pitfall{background:linear-gradient(135deg,rgba(224,112,95,.12),var(--card))}
+.callout.pitfall::before{background:var(--neg)}.callout.pitfall .co-title{color:var(--neg)}
+.callout.key{background:linear-gradient(135deg,rgba(200,168,75,.12),var(--card))}
+.callout.key::before{background:var(--gold)}.callout.key .co-title{color:var(--gold-2)}
+
+.analogy{background:linear-gradient(135deg,rgba(200,168,75,.07),rgba(26,92,82,.09));
+  border:1px dashed var(--gold-dim);border-radius:12px;padding:18px 22px;margin:18px 0}
+.analogy .an-label{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:9px}
+.analogy p{color:var(--text);font-size:15.5px;margin:0}
+.analogy em{color:var(--gold-2);font-style:normal;font-weight:600}
+
+.code-wrap{background:#0b0b12;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:18px 0}
+.code-bar{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--ink-3);border-bottom:1px solid var(--line)}
+.code-bar .fname{font-family:var(--mono);font-size:11.5px;color:var(--text-3)}
+.code-bar .fname .d{color:var(--teal-bright)}
+.copy-btn{font-family:var(--mono);font-size:11px;background:transparent;border:1px solid var(--line-2);color:var(--text-2);
+  padding:4px 11px;border-radius:6px;cursor:pointer;transition:all .18s}
+.copy-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(200,168,75,.08)}
+.copy-btn.done{border-color:var(--teal-2);color:var(--teal-bright)}
+pre{margin:0;padding:17px 18px;overflow-x:auto;font-family:var(--mono);font-size:13.1px;line-height:1.68;color:#d6d3cc}
+pre::-webkit-scrollbar{height:8px}pre::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:4px}
+.c-kw{color:#c58fd6}.c-str{color:#8fbf7f}.c-com{color:#5c5c6e;font-style:italic}.c-num{color:#d9a566}.c-fn{color:#6fb3d9}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin:20px 0}
+.panel-title{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);font-weight:700;
+  margin-bottom:16px;display:flex;align-items:center;gap:9px}
+.panel-title .ic{font-size:15px}
+
+.stepper{margin:22px 0}
+.step-track{display:flex;align-items:center;gap:0;margin-bottom:18px;overflow-x:auto;padding-bottom:6px}
+.step-dot{display:flex;align-items:center;gap:8px;flex-shrink:0;cursor:pointer;background:transparent;border:none;padding:0;font-family:var(--sans)}
+.step-dot .circle{width:29px;height:29px;border-radius:50%;border:2px solid var(--line-2);display:flex;align-items:center;
+  justify-content:center;font-family:var(--mono);font-size:12px;color:var(--text-3);transition:all .28s;flex-shrink:0;background:var(--ink-2)}
+.step-dot.done .circle{border-color:var(--teal-2);color:var(--teal-bright);background:rgba(26,92,82,.25)}
+.step-dot.active .circle{border-color:var(--gold);color:var(--ink);background:var(--gold);
+  box-shadow:0 0 0 5px rgba(200,168,75,.16);transform:scale(1.08)}
+.step-conn{width:26px;height:2px;background:var(--line);flex-shrink:0;transition:background .3s}
+.step-conn.done{background:var(--teal-2)}
+.step-body{background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:18px 20px;min-height:104px}
+.step-item{display:none;animation:fadeUp .35s ease}.step-item.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.step-item h5{font-size:14.5px;color:var(--gold-2);margin-bottom:8px;font-weight:700}
+.step-item p{font-size:14.8px;margin:0 0 8px}
+.step-controls{display:flex;gap:10px;margin-top:14px;align-items:center}
+.btn{font-family:var(--sans);font-size:13.5px;font-weight:600;padding:8px 17px;border-radius:9px;cursor:pointer;
+  transition:all .18s;border:1px solid var(--line-2);background:var(--ink-3);color:var(--text)}
+.btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold-2)}
+.btn:disabled{opacity:.32;cursor:not-allowed}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:#171208}
+.btn.primary:hover:not(:disabled){background:var(--gold-2);border-color:var(--gold-2)}
+.step-counter{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--text-3)}
+
+textarea,input[type=text]{width:100%;background:var(--ink-2);border:1px solid var(--line-2);border-radius:10px;color:var(--text);
+  font-family:var(--mono);font-size:14px;padding:13px 15px;resize:vertical;line-height:1.6;transition:border-color .2s}
+textarea:focus,input[type=text]:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,168,75,.11)}
+textarea::placeholder,input::placeholder{color:var(--text-3)}
+
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;
+  background:linear-gradient(90deg,var(--teal-2),var(--gold));outline:none;margin:12px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--gold);cursor:pointer;border:3px solid var(--ink);box-shadow:0 0 0 1px var(--gold)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--ink)}
+.range-row{display:flex;align-items:center;gap:14px}
+.range-row .val{font-family:var(--mono);font-size:15px;color:var(--gold-2);min-width:66px;text-align:right;font-weight:700}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px;min-height:38px;align-items:flex-start;padding:4px 0}
+.chip{font-family:var(--mono);font-size:12.5px;padding:4.5px 11px;border-radius:7px;background:var(--ink-3);
+  border:1px solid var(--line-2);color:var(--text);animation:chipIn .3s cubic-bezier(.34,1.56,.64,1) backwards}
+.chip.pos{background:rgba(63,184,160,.15);border-color:var(--teal-2);color:var(--teal-bright)}
+.chip.neg{background:rgba(224,112,95,.15);border-color:var(--neg);color:#f0a294}
+.chip.ghost{background:transparent;border-style:dashed;color:var(--text-3);cursor:pointer}
+.chip.ghost:hover{border-color:var(--gold);color:var(--gold-2)}
+@keyframes chipIn{from{opacity:0;transform:scale(.75) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:18px 0}
+.metric{background:var(--ink-2);border:1px solid var(--line);border-radius:11px;padding:15px 17px;transition:border-color .2s}
+.metric:hover{border-color:var(--line-2)}
+.metric .mv{font-family:var(--mono);font-size:1.5rem;font-weight:700;color:var(--gold-2);line-height:1.15}
+.metric .mv.teal{color:var(--teal-bright)}.metric .mv.neg{color:var(--neg)}
+.metric .ml{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-top:6px}
+
+.bar-track{height:30px;border-radius:8px;background:var(--ink-3);overflow:hidden;display:flex;border:1px solid var(--line)}
+.bar-seg{height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;
+  font-weight:700;color:#08120f;transition:width .55s cubic-bezier(.4,0,.2,1);overflow:hidden;white-space:nowrap}
+.bar-seg.p{background:linear-gradient(90deg,#2f9d87,#4fd0b4)}
+.bar-seg.n{background:linear-gradient(90deg,#c95f4f,#e88270)}
+
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}
+@media(max-width:640px){.cmp-grid{grid-template-columns:1fr}}
+.cmp-card{background:var(--ink-2);border:1px solid var(--line);border-radius:11px;padding:16px}
+.cmp-card.bad{border-color:rgba(224,112,95,.4)}.cmp-card.good{border-color:rgba(63,184,160,.4)}
+.cmp-card h6{font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:11px;font-weight:700}
+.cmp-card.bad h6{color:var(--neg)}.cmp-card.good h6{color:var(--teal-bright)}
+.cmp-card .readout{font-family:var(--mono);font-size:13px;color:var(--text);word-break:break-all;line-height:1.6}
+
+table.tbl{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+table.tbl th{background:var(--ink-3);color:var(--gold);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  padding:10px 13px;text-align:left;border-bottom:1px solid var(--line-2)}
+table.tbl td{padding:10px 13px;border-bottom:1px solid var(--line);color:var(--text-2)}
+table.tbl tr:last-child td{border-bottom:none}
+table.tbl td.mono{font-family:var(--mono);color:var(--text)}
+table.tbl td.cell-hit{background:rgba(63,184,160,.09)}
+table.tbl td.cell-miss{background:rgba(224,112,95,.09)}
+
+.test-list{display:grid;gap:9px;margin:16px 0}
+.test-row{display:flex;align-items:center;gap:13px;padding:12px 15px;border-radius:10px;background:var(--ink-2);
+  border:1px solid var(--line);cursor:pointer;transition:all .2s;text-align:left;width:100%;font-family:var(--sans);color:var(--text)}
+.test-row:hover{border-color:var(--gold-dim);transform:translateX(3px)}
+.test-row.revealed{cursor:default}.test-row.revealed:hover{transform:none}
+.test-row .idx{font-family:var(--mono);font-size:11px;color:var(--text-3);min-width:18px}
+.test-row .txt{flex:1;font-size:14.3px}
+.test-row .res{font-family:var(--mono);font-size:11.5px;padding:3px 9px;border-radius:6px;opacity:0;transition:opacity .35s;white-space:nowrap}
+.test-row.revealed .res{opacity:1}
+.test-row .res.ok{background:rgba(63,184,160,.16);color:var(--teal-bright)}
+.test-row .res.bad{background:rgba(224,112,95,.16);color:#f0a294}
+
+.pipe-stage{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:20px 0}
+@media(max-width:700px){.pipe-stage{grid-template-columns:repeat(2,1fr)}}
+.pipe-node{background:var(--ink-2);border:1px solid var(--line);border-radius:11px;padding:14px 12px;text-align:center;
+  cursor:pointer;transition:all .28s}
+.pipe-node:hover{border-color:var(--gold-dim);transform:translateY(-3px)}
+.pipe-node.active{border-color:var(--gold);background:rgba(200,168,75,.11);box-shadow:0 0 0 3px rgba(200,168,75,.11);transform:translateY(-3px)}
+.pipe-node.done{border-color:var(--teal-2)}
+.pipe-node .pn-ic{font-size:21px;display:block;margin-bottom:7px}
+.pipe-node .pn-t{font-size:12.6px;font-weight:650;color:var(--text);line-height:1.3}
+.pipe-node .pn-s{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:4px}
+
+.map-wrap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;overflow-x:auto}
+.map-wrap svg{display:block;min-width:820px;width:100%;height:auto}
+.map-node{cursor:pointer}.map-node rect{transition:all .25s}.map-node:hover rect{filter:brightness(1.5)}
+.map-node text{pointer-events:none;font-family:var(--sans)}
+
+.takeaway-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:14px;margin:22px 0}
+.takeaway{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;border-top:2px solid var(--gold-dim);transition:all .25s}
+.takeaway:hover{border-top-color:var(--gold);transform:translateY(-3px)}
+.takeaway h6{font-size:14.5px;color:var(--gold-2);margin-bottom:8px;font-weight:700}
+.takeaway p{font-size:14.2px;margin:0;color:var(--text-2)}
+
+.next-list{display:grid;gap:11px;margin:18px 0}
+.next-item{display:flex;gap:14px;padding:15px 18px;background:var(--ink-2);border:1px solid var(--line);border-radius:11px;transition:all .22s}
+.next-item:hover{border-color:var(--teal-2);transform:translateX(4px)}
+.next-item .ni-n{font-family:var(--mono);font-size:12px;color:var(--teal-bright);border:1px solid var(--teal);
+  border-radius:6px;padding:2px 8px;height:fit-content;flex-shrink:0}
+.next-item .ni-b h6{font-size:14.5px;color:var(--text);margin-bottom:4px;font-weight:650}
+.next-item .ni-b p{font-size:13.8px;margin:0;color:var(--text-2)}
+
+.formula{font-family:var(--mono);font-size:14px;background:var(--ink-3);border:1px solid var(--line);border-radius:9px;
+  padding:13px 17px;margin:14px 0;color:var(--gold-2);overflow-x:auto;line-height:1.9}
+.formula .hl{color:var(--teal-bright)}.formula .dim{color:var(--text-3)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0;font-size:12.5px;color:var(--text-3)}
+.legend span{display:flex;align-items:center;gap:7px}
+.legend .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+footer{margin-left:270px;padding:40px 34px 60px;border-top:1px solid var(--line);text-align:center;color:var(--text-3);font-size:13px}
+@media(max-width:900px){footer{margin-left:0;padding:34px 18px 50px}}
+.fade-in{opacity:0;transform:translateY(22px);transition:opacity .65s ease,transform .65s cubic-bezier(.4,0,.2,1)}
+.fade-in.vis{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="readProgress"></div>
+<button class="toc-toggle" id="tocToggle">☰</button>
+<div class="toc-backdrop" id="tocBackdrop"></div>
+
+<nav class="toc" id="toc">
+  <div class="toc-brand"><span class="dot"></span><h1>Notebook</h1></div>
+  <div class="toc-sub">Sentiment Analyzer Agent</div>
+  <a href="#hero"><span class="num">◆</span> Introduction</a>
+  <a href="#map"><span class="num">◆</span> Concept Map</a>
+  <div class="toc-divider"></div>
+  <a href="#c1"><span class="num">01</span> Tokenization</a>
+  <a href="#c2"><span class="num">02</span> Bag of Words</a>
+  <a href="#c3"><span class="num">03</span> Class Counting</a>
+  <a href="#c4"><span class="num">04</span> Bayes' Theorem</a>
+  <a href="#c5"><span class="num">05</span> Laplace Smoothing</a>
+  <a href="#c6"><span class="num">06</span> Log Probabilities</a>
+  <a href="#c7"><span class="num">07</span> Normalization</a>
+  <a href="#c8"><span class="num">08</span> Train/Test Eval</a>
+  <a href="#c9"><span class="num">09</span> Streamlit Wiring</a>
+  <div class="toc-divider"></div>
+  <a href="#pipeline"><span class="num">◆</span> How It Fits Together</a>
+  <a href="#takeaways"><span class="num">◆</span> Takeaways &amp; Next</a>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-badge"><span class="pulse"></span>Project 08 · Interactive Notebook</div>
+  <span class="hero-emoji">😊</span>
+  <h2>Sentiment Analyzer Agent</h2>
+  <p class="lede">A machine-learning sentiment classifier built from scratch with <strong>Naive Bayes</strong> — no ML libraries, just counting, probability, and a little arithmetic.</p>
+  <p class="lede" style="font-size:1rem">It reads a customer review and answers: <strong>positive or negative — and how sure am I?</strong></p>
+  <div class="hero-promise">
+    <h3>By the end you will understand</h3>
+    <ul>
+      <li>How raw text becomes numbers (tokenization, bag of words)</li>
+      <li>How Naive Bayes turns word counts into a probability — and why it's "naive"</li>
+      <li>Why Laplace smoothing exists and what breaks without it</li>
+      <li>Why real systems work in <em>log space</em></li>
+      <li>How a raw score becomes "Confidence: 94.2%"</li>
+      <li>How to honestly evaluate a classifier — and why 100% here is misleading</li>
+      <li>How the model gets wired into a Streamlit app</li>
+    </ul>
+  </div>
+  <div class="hero-stats">
+    <div class="hstat"><div class="v" id="hs-reviews">30</div><div class="l">Train Reviews</div></div>
+    <div class="hstat"><div class="v" id="hs-vocab">—</div><div class="l">Vocabulary</div></div>
+    <div class="hstat"><div class="v" id="hs-acc">—</div><div class="l">Test Accuracy</div></div>
+    <div class="hstat"><div class="v">2</div><div class="l">Classes</div></div>
+  </div>
+</section>
+
+<!-- CONCEPT MAP -->
+<section id="map">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>The Landscape</div>
+    <h3 class="sec-title">Concept <span class="accent">Map</span></h3>
+    <p class="sec-desc">The whole project in one picture. Data flows left to right through four phases. <strong>Click any node</strong> to jump to that concept.</p>
+  </div>
+  <div class="map-wrap">
+    <svg viewBox="0 0 1040 470">
+      <defs>
+        <linearGradient id="gPrep" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a5c52" stop-opacity=".28"/><stop offset="100%" stop-color="#1a5c52" stop-opacity=".06"/></linearGradient>
+        <linearGradient id="gTrain" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c8a84b" stop-opacity=".24"/><stop offset="100%" stop-color="#c8a84b" stop-opacity=".05"/></linearGradient>
+        <linearGradient id="gScore" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8a4fb8" stop-opacity=".22"/><stop offset="100%" stop-color="#8a4fb8" stop-opacity=".05"/></linearGradient>
+        <linearGradient id="gShip" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c95f4f" stop-opacity=".20"/><stop offset="100%" stop-color="#c95f4f" stop-opacity=".05"/></linearGradient>
+        <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="#3a3a52"/></marker>
+      </defs>
+      <rect x="10" y="52" width="240" height="392" rx="16" fill="url(#gPrep)" stroke="#1f5c52"/>
+      <rect x="270" y="52" width="240" height="392" rx="16" fill="url(#gTrain)" stroke="#6b5a28"/>
+      <rect x="530" y="52" width="240" height="392" rx="16" fill="url(#gScore)" stroke="#5a3a78"/>
+      <rect x="790" y="52" width="240" height="392" rx="16" fill="url(#gShip)" stroke="#7a3c30"/>
+      <text x="130" y="34" text-anchor="middle" fill="#3fb8a0" font-size="12" font-weight="700" letter-spacing="2">1 · PREPARE</text>
+      <text x="390" y="34" text-anchor="middle" fill="#c8a84b" font-size="12" font-weight="700" letter-spacing="2">2 · TRAIN</text>
+      <text x="650" y="34" text-anchor="middle" fill="#b98fe0" font-size="12" font-weight="700" letter-spacing="2">3 · SCORE</text>
+      <text x="910" y="34" text-anchor="middle" fill="#e88270" font-size="12" font-weight="700" letter-spacing="2">4 · SHIP</text>
+      <line x1="252" y1="248" x2="266" y2="248" stroke="#3a3a52" stroke-width="2" marker-end="url(#arrow)"/>
+      <line x1="512" y1="248" x2="526" y2="248" stroke="#3a3a52" stroke-width="2" marker-end="url(#arrow)"/>
+      <line x1="772" y1="248" x2="786" y2="248" stroke="#3a3a52" stroke-width="2" marker-end="url(#arrow)"/>
+      <g class="map-node" data-target="c1"><rect x="30" y="182" width="200" height="56" rx="11" fill="#12121c" stroke="#2a7a6a" stroke-width="1.4"/><text x="130" y="207" text-anchor="middle" fill="#e9e7e2" font-size="14" font-weight="600">Tokenization</text><text x="130" y="225" text-anchor="middle" fill="#807d76" font-size="11" font-family="monospace">01</text></g>
+      <g class="map-node" data-target="c2"><rect x="30" y="262" width="200" height="56" rx="11" fill="#12121c" stroke="#2a7a6a" stroke-width="1.4"/><text x="130" y="287" text-anchor="middle" fill="#e9e7e2" font-size="14" font-weight="600">Bag of Words</text><text x="130" y="305" text-anchor="middle" fill="#807d76" font-size="11" font-family="monospace">02</text></g>
+      <g class="map-node" data-target="c3"><rect x="290" y="182" width="200" height="56" rx="11" fill="#12121c" stroke="#8a7534" stroke-width="1.4"/><text x="390" y="207" text-anchor="middle" fill="#e9e7e2" font-size="14" font-weight="600">Class Counting</text><text x="390" y="225" text-anchor="middle" fill="#807d76" font-size="11" font-family="monospace">03</text></g>
+      <g class="map-node" data-target="c4"><rect x="290" y="262" width="200" height="56" rx="11" fill="#12121c" stroke="#8a7534" stroke-width="1.4"/><text x="390" y="287" text-anchor="middle" fill="#e9e7e2" font-size="14" font-weight="600">Bayes' Theorem</text><text x="390" y="305" text-anchor="middle" fill="#807d76" font-size="11" font-family="monospace">04</text></g>
+      <g class="map-node" data-target="c5"><rect x="550" y="142" width="200" height="56" rx="11" fill="#12121c" stroke="#6a4a90" stroke-width="1.4"/><text x="650" y="167" text-anchor="middle" fill="#e9e7e2" font-size="14" font-weight="600">Laplace Smoothing</text><text x="650" y="185" text-anchor="middle" fill="#807d76" font-size="11" font-family="monospace">05</text></g>
+      <g class="map-node" data-target="c6"><rect x="550" y="222" width="200" height="56" rx="11" fill="#12121c" stroke="#6a4a90" stroke-width="1.4"/><text x="650" y="247" text-anchor="middle" fill="#e9e7e2" font-size="14" font-weight="600">Log Probabilities</text><text x="650" y="265" text-anchor="middle" fill="#807d76" font-size="11" font-family="monospace">06</text></g>
+      <g class="map-node" data-target="c7"><rect x="550" y="302" width="200" height="56" rx="11" fill="#12121c" stroke="#6a4a90" stroke-width="1.4"/><text x="650" y="327" text-anchor="middle" fill="#e9e7e2" font-size="14" font-weight="600">Normalization</text><text x="650" y="345" text-anchor="middle" fill="#807d76" font-size="11" font-family="monospace">07</text></g>
+      <g class="map-node" data-target="c8"><rect x="810" y="182" width="200" height="56" rx="11" fill="#12121c" stroke="#9a4a3a" stroke-width="1.4"/><text x="910" y="207" text-anchor="middle" fill="#e9e7e2" font-size="14" font-weight="600">Train / Test Eval</text><text x="910" y="225" text-anchor="middle" fill="#807d76" font-size="11" font-family="monospace">08</text></g>
+      <g class="map-node" data-target="c9"><rect x="810" y="262" width="200" height="56" rx="11" fill="#12121c" stroke="#9a4a3a" stroke-width="1.4"/><text x="910" y="287" text-anchor="middle" fill="#e9e7e2" font-size="14" font-weight="600">Streamlit App</text><text x="910" y="305" text-anchor="middle" fill="#807d76" font-size="11" font-family="monospace">09</text></g>
+    </svg>
+  </div>
+</section>
+
+<!-- 01 TOKENIZATION -->
+<section id="c1" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>Concept 01</div>
+    <h3 class="sec-title">Tokenization — <span class="accent">text becomes words</span></h3>
+    <p class="sec-desc">Computers can't do math on "I love this product". Tokenization breaks a sentence into individual words — the atoms every later step operates on.</p>
+  </div>
+  <h4 class="block">Plain-language explanation</h4>
+  <p><strong>Tokenization</strong> is chopping text into smaller pieces called <em>tokens</em>. Here a token is simply a word. Before chopping, text is lowercased so <code class="inline">"Love"</code> and <code class="inline">"love"</code> become the same token.</p>
+  <p>The chopping uses a <strong>regular expression</strong> — the pattern <code class="inline">\b[a-z]+\b</code>: "a word boundary, one or more lowercase letters, another word boundary." Anything else — punctuation, digits, emoji — is discarded.</p>
+  <div class="analogy"><div class="an-label">🧩 Analogy</div><p>A <em>shredder with a sieve</em>. Feed in a document; it shreds into strips. Only strips that are pure letters fall through — commas and numbers get caught and thrown away.</p></div>
+  <h4 class="block">Why it matters</h4>
+  <p>Every downstream step operates on the token list. Real systems make deliberate choices here — keep punctuation? split contractions? keep emoji? This project uses the simplest rule, and that choice has consequences.</p>
+
+  <h4 class="block">Interactive — live tokenizer</h4>
+  <div class="panel">
+    <div class="panel-title"><span class="ic">✂️</span>Type anything and watch it tokenize</div>
+    <textarea id="tokInput" rows="2" placeholder="Try: I don't LOVE this product!!! It's 100% amazing 😍">I don't LOVE this product!!! It's 100% amazing 😍</textarea>
+    <div style="margin-top:14px">
+      <div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:9px">Tokens that survived</div>
+      <div class="chips" id="tokOut"></div>
+    </div>
+    <div style="margin-top:18px">
+      <div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:9px">Characters discarded</div>
+      <div class="chips" id="tokDropped"></div>
+    </div>
+    <div class="metrics" style="margin-top:18px">
+      <div class="metric"><div class="mv" id="tokCount">0</div><div class="ml">Tokens</div></div>
+      <div class="metric"><div class="mv teal" id="tokUnique">0</div><div class="ml">Unique</div></div>
+      <div class="metric"><div class="mv" id="tokRatio">—</div><div class="ml">Chars / Token</div></div>
+    </div>
+  </div>
+
+  <div class="callout pitfall">
+    <div class="co-title">⚠️ Pitfall — the regex eats contractions</div>
+    <p><code class="inline">"I don't like it"</code> becomes <code class="inline">["i","don","t","like","it"]</code> — the apostrophe splits "don't" into "don" and "t". This is the <strong>negation blind spot</strong>: the model never learns that "don" + "t" means "not".</p>
+  </div>
+
+  <h4 class="block">Worked code</h4>
+  <div class="code-wrap">
+    <div class="code-bar"><span class="fname"><span class="d">tokenize()</span></span><button class="copy-btn">Copy</button></div>
+<pre><code>import re
+
+def tokenize(text):
+    # 1. lowercase so "Love" and "love" merge
+    text = text.lower()
+
+    # 2. find every run of lowercase letters between word boundaries
+    words = re.findall(r"\b[a-z]+\b", text)
+
+    # 3. return the token list
+    return words
+
+
+tokenize("I love this product")
+# → ['i', 'love', 'this', 'product']
+
+tokenize("I don't LOVE this!!! It's 100% amazing")
+# → ['i', 'don', 't', 'love', 'this', 'it', 's', 'amazing']</code></pre>
+  </div>
+</section>
+
+<!-- 02 BAG OF WORDS -->
+<section id="c2" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>Concept 02</div>
+    <h3 class="sec-title">Bag of Words &amp; the <span class="accent">Vocabulary</span></h3>
+    <p class="sec-desc">Once tokenized, word order is thrown away. The set of all distinct words across training is the <strong>vocabulary</strong> — its size shows up in every probability.</p>
+  </div>
+  <h4 class="block">Plain-language explanation</h4>
+  <p>The <strong>bag-of-words</strong> model represents a document as an unordered collection of its words. "I love this product" and "product this love I" become identical. You lose grammar, you gain simplicity.</p>
+  <p>The <strong>vocabulary</strong> is the set of all distinct words across the training corpus, built with a <code class="inline">set()</code>. Its size (<code class="inline">vocab_size</code>) appears in the Laplace denominator and therefore affects every prediction.</p>
+  <div class="analogy"><div class="an-label">🧩 Analogy</div><p>Empty 30 shopping bags onto a table and sort into an <em>inventory of unique items</em>. You don't care which bag each came from — only that the inventory contains <em>apples</em>, <em>bread</em>, <em>milk</em>. The number of distinct items is <em>vocab_size</em>.</p></div>
+
+  <h4 class="block">Interactive — watch the vocabulary grow</h4>
+  <div class="panel">
+    <div class="panel-title"><span class="ic">📚</span>Stream the training reviews in</div>
+    <div class="metrics">
+      <div class="metric"><div class="mv" id="vbReviews">0</div><div class="ml">Reviews Read</div></div>
+      <div class="metric"><div class="mv teal" id="vbUnique">0</div><div class="ml">Unique Words</div></div>
+      <div class="metric"><div class="mv" id="vbTotal">0</div><div class="ml">Total Tokens</div></div>
+    </div>
+    <div class="bar-track" style="height:8px;margin:16px 0"><div class="bar-seg p" id="vbProgress" style="width:0%"></div></div>
+    <div class="chips" id="vbCloud" style="max-height:170px;overflow-y:auto"></div>
+    <div class="step-controls" style="margin-top:16px">
+      <button class="btn primary" id="vbPlay">▶ Play</button>
+      <button class="btn" id="vbStep">Step ▸</button>
+      <button class="btn" id="vbReset">↺ Reset</button>
+    </div>
+  </div>
+
+  <div class="callout key">
+    <div class="co-title">🔑 Key idea</div>
+    <p>The vocabulary is <strong>shared between both classes</strong>. What differs per class is the <em>counts</em>. A word like "service" appears in both classes with different frequencies — that difference is the entire signal.</p>
+  </div>
+
+  <h4 class="block">Worked code</h4>
+  <div class="code-wrap">
+    <div class="code-bar"><span class="fname"><span class="d">vocabulary</span> construction</span><button class="copy-btn">Copy</button></div>
+<pre><code>vocabulary = set()
+positive_word_counts = {}
+negative_word_counts = {}
+positive_total_words = 0
+negative_total_words = 0
+
+for review in positive_reviews:
+    words = tokenize(review)
+    for word in words:
+        vocabulary.add(word)                                     # set dedupes
+        positive_word_counts[word] = positive_word_counts.get(word, 0) + 1
+        positive_total_words += 1
+
+# identical loop for negative_reviews → negative_word_counts, negative_total_words
+print(len(vocabulary))   # → vocab_size, used in smoothing</code></pre>
+  </div>
+</section>
+
+<!-- 03 CLASS COUNTING -->
+<section id="c3" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>Concept 03</div>
+    <h3 class="sec-title">Class-Conditional <span class="accent">Word Counting</span></h3>
+    <p class="sec-desc">This <em>is</em> the training step. No gradient descent, no epochs — just counting how often each word appears inside each class.</p>
+  </div>
+  <h4 class="block">Plain-language explanation</h4>
+  <p>For each class we build a dictionary mapping every word to how many times it occurred across that class. We also track the total token count per class. Training is finished.</p>
+  <p>These are <strong>class-conditional</strong> counts — <em>"how often does 'terrible' appear given the review is negative?"</em> Dividing a word's count by the class total gives the maximum likelihood estimate of that word's probability within the class.</p>
+  <div class="analogy"><div class="an-label">🧩 Analogy</div><p>Two jars of jellybeans. One filled by people who <em>loved</em> a product; the other by people who <em>hated</em> it. Each drops in one bean per word they wrote. If the "loved" jar is swimming in red beans, red is strong evidence for that jar.</p></div>
+
+  <h4 class="block">Interactive — the count matrix</h4>
+  <div class="panel">
+    <div class="panel-title"><span class="ic">🔢</span>Hover any cell to inspect</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn" id="cmAll">All words</button>
+      <button class="btn" id="cmBoth">In both classes</button>
+      <button class="btn" id="cmPos">Positive only</button>
+      <button class="btn" id="cmNeg">Negative only</button>
+    </div>
+    <div style="max-height:400px;overflow-y:auto;border:1px solid var(--line);border-radius:10px">
+      <table class="tbl" id="countTable">
+        <thead><tr><th>Word</th><th style="text-align:center">Positive</th><th style="text-align:center">Negative</th><th style="text-align:center">Leans</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="metrics" style="margin-top:16px">
+      <div class="metric"><div class="mv teal" id="cmPosTotal">—</div><div class="ml">Positive tokens</div></div>
+      <div class="metric"><div class="mv neg" id="cmNegTotal">—</div><div class="ml">Negative tokens</div></div>
+      <div class="metric"><div class="mv" id="cmVocab">—</div><div class="ml">Vocabulary size</div></div>
+    </div>
+  </div>
+
+  <div class="callout key">
+    <div class="co-title">🔑 Key idea</div>
+    <p>Naive Bayes training is <strong>O(n) in tokens</strong> — a single pass. It trains in milliseconds here and seconds on millions of documents. Speed is Naive Bayes's superpower.</p>
+  </div>
+
+  <h4 class="block">Worked code</h4>
+  <div class="code-wrap">
+    <div class="code-bar"><span class="fname"><span class="d">the training loop</span></span><button class="copy-btn">Copy</button></div>
+<pre><code>positive_word_counts = {}
+positive_total_words = 0
+
+for review in positive_reviews:
+    words = tokenize(review)
+    for word in words:
+        positive_word_counts[word] = (
+            positive_word_counts.get(word, 0) + 1
+        )
+        positive_total_words += 1
+
+# negative loop is identical, writing to its own dictionaries
+
+# rough probability (before smoothing):
+# P(word | positive) = positive_word_counts[word] / positive_total_words</code></pre>
+  </div>
+</section>
+
+<!-- 04 BAYES -->
+<section id="c4" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>Concept 04</div>
+    <h3 class="sec-title">Bayes' Theorem &amp; <span class="accent">the "Naive" Assumption</span></h3>
+    <p class="sec-desc">How per-word probabilities combine into a verdict. Bayes' theorem. And the "naive" part is the shortcut that makes it trivial — at a cost.</p>
+  </div>
+  <h4 class="block">Plain-language explanation</h4>
+  <p>Bayes' theorem updates a belief when you see evidence. You start with a <em>prior</em>, multiply in how likely each word is under each class, and get the <em>posterior</em>.</p>
+  <div class="formula">P(class | words) &nbsp;<span class="dim">∝</span>&nbsp; P(class) &nbsp;<span class="dim">×</span>&nbsp; <span class="hl">∏ P(wordᵢ | class)</span></div>
+  <p>The <strong>"naive" assumption</strong> is that ∏ — treating every word as statistically <em>independent</em> given the class. Obviously false ("customer" and "service" co-occur), but it makes the math a simple product. Both priors are hardcoded to 0.5 — "no reason to prefer either class."</p>
+  <div class="analogy"><div class="an-label">🧩 Analogy</div><p>A doctor starts with a prior: "probably a cold". A fever makes flu more likely; a rash makes allergy more likely. Each symptom updates the odds. The "naive" part is assuming each symptom is independent of the others.</p></div>
+
+  <h4 class="block">Interactive — build a prediction word by word</h4>
+  <div class="panel">
+    <div class="panel-title"><span class="ic">⚖️</span>Click words to add evidence</div>
+    <p style="font-size:14.4px;margin-bottom:14px">Start at 50/50. Each word shifts the balance based on how much more (or less) often it appears in positive vs. negative training reviews.</p>
+    <div class="bar-track" id="evidenceBar">
+      <div class="bar-seg p" id="evPos" style="width:50%">50.0%</div>
+      <div class="bar-seg n" id="evNeg" style="width:50%">50.0%</div>
+    </div>
+    <div class="metrics" style="margin-top:16px">
+      <div class="metric"><div class="mv teal" id="evPosLog">-0.693</div><div class="ml">Positive log-score</div></div>
+      <div class="metric"><div class="mv neg" id="evNegLog">-0.693</div><div class="ml">Negative log-score</div></div>
+      <div class="metric"><div class="mv" id="evVerdict">Tie</div><div class="ml">Verdict</div></div>
+    </div>
+    <div style="margin-top:18px">
+      <div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px">Available evidence</div>
+      <div class="chips" id="evidenceWords"></div>
+    </div>
+    <div style="margin-top:16px">
+      <div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px">Review so far</div>
+      <div class="chips" id="evidencePicked"><span style="color:var(--text-3);font-size:13.5px">(empty — click a word)</span></div>
+    </div>
+    <div class="step-controls" style="margin-top:16px"><button class="btn" id="evClear">↺ Clear</button></div>
+  </div>
+
+  <div class="callout pitfall">
+    <div class="co-title">⚠️ Pitfall — Naive Bayes cannot see negation</div>
+    <p>Add <em>not</em>, <em>good</em>. <em>"good"</em> pushes hard toward positive; <em>"not"</em> barely registers. The model predicts <strong>positive</strong> for "not good". Bag-of-words destroyed order, and independence scores each word in isolation.</p>
+  </div>
+
+  <h4 class="block">Worked code</h4>
+  <div class="code-wrap">
+    <div class="code-bar"><span class="fname"><span class="d">the Bayes core</span></span><button class="copy-btn">Copy</button></div>
+<pre><code>vocab_size = len(vocabulary)
+
+# PRIOR — equal belief before seeing any words
+positive_log_probability = math.log(0.5)
+negative_log_probability = math.log(0.5)
+
+# EVIDENCE — fold in each word's likelihood
+for word in words:
+    positive_probability = (
+        positive_word_counts.get(word, 0) + 1
+    ) / (positive_total_words + vocab_size)
+
+    negative_probability = (
+        negative_word_counts.get(word, 0) + 1
+    ) / (negative_total_words + vocab_size)
+
+    positive_log_probability += math.log(positive_probability)
+    negative_log_probability += math.log(negative_probability)</code></pre>
+  </div>
+</section>
+
+<!-- 05 LAPLACE -->
+<section id="c5" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>Concept 05</div>
+    <h3 class="sec-title">Laplace Smoothing — <span class="accent">never bet on zero</span></h3>
+    <p class="sec-desc">One unseen word would otherwise multiply the entire probability by zero, destroying the prediction. Smoothing adds a constant so nothing is impossible.</p>
+  </div>
+  <h4 class="block">Plain-language explanation</h4>
+  <p>Without smoothing, a word's probability is <code class="inline">count / total</code>. If the word never appeared in a class, <code class="inline">count = 0</code> → probability 0. Since the whole review is a <em>product</em>, one zero annihilates everything.</p>
+  <p>Laplace smoothing (additive / add-one) fixes this by adding 1 to every count and the vocabulary size to the denominator:</p>
+  <div class="formula">P(word | class) = ( count(word, class) <span class="hl">+ 1</span> ) / ( total_words(class) <span class="hl">+ vocab_size</span> )</div>
+  <div class="analogy"><div class="an-label">🧩 Analogy</div><p>A pollster who surveyed 100 people and none mentioned liking a candidate doesn't declare them <em>impossible</em>. They reserve a tiny nonzero chance until they know more. That's what +1 does.</p></div>
+
+  <h4 class="block">Interactive — turn the smoothing dial</h4>
+  <div class="panel">
+    <div class="panel-title"><span class="ic">🎚️</span>Watch an unseen word become possible</div>
+    <p style="font-size:14.4px;margin-bottom:6px">Pick a word, then drag α. At α = 0 there is no smoothing.</p>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;margin:14px 0">
+      <button class="btn" data-word="amazing">amazing</button>
+      <button class="btn" data-word="excellent">excellent</button>
+      <button class="btn" data-word="fantastic">fantastic</button>
+      <button class="btn" data-word="awful">awful</button>
+      <button class="btn" data-word="horrible">horrible</button>
+    </div>
+    <div class="range-row">
+      <span style="font-size:13px;color:var(--text-3);white-space:nowrap">α (alpha)</span>
+      <input type="range" id="alphaRange" min="0" max="3" step="0.05" value="1">
+      <span class="val" id="alphaVal">1.00</span>
+    </div>
+    <div class="cmp-grid" style="margin-top:18px">
+      <div class="cmp-card"><h6>Positive class</h6><div class="readout" id="alphaPosOut"></div></div>
+      <div class="cmp-card"><h6>Negative class</h6><div class="readout" id="alphaNegOut"></div></div>
+    </div>
+    <div id="alphaWarn" style="margin-top:14px"></div>
+  </div>
+
+  <div class="callout pitfall">
+    <div class="co-title">⚠️ Pitfall — α = 0 breaks everything</div>
+    <p>Set the slider to 0. The negative probability becomes exactly <code class="inline">0.0</code>, and <code class="inline">math.log(0)</code> raises <code class="inline">ValueError: math domain error</code>. The <code class="inline">+1</code> is load-bearing.</p>
+  </div>
+
+  <h4 class="block">Worked code</h4>
+  <div class="code-wrap">
+    <div class="code-bar"><span class="fname"><span class="d">smoothing</span></span><button class="copy-btn">Copy</button></div>
+<pre><code>positive_probability = (
+    positive_word_counts.get(word, 0) + 1     # +1: nothing is impossible
+) / (
+    positive_total_words + vocab_size         # +V: keeps sum = 1
+)
+
+negative_probability = (
+    negative_word_counts.get(word, 0) + 1
+) / (
+    negative_total_words + vocab_size
+)</code></pre>
+  </div>
+</section>
+
+<!-- 06 LOG -->
+<section id="c6" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>Concept 06</div>
+    <h3 class="sec-title">Log Probabilities — <span class="accent">why we don't multiply</span></h3>
+    <p class="sec-desc">Multiplying hundreds of small probabilities makes the result vanish into 0.0 on the computer. Summing logs is the mathematically identical fix.</p>
+  </div>
+  <h4 class="block">Plain-language explanation</h4>
+  <p>A typical word probability is around <code class="inline">0.01</code>. Multiply 50 of them and you get <code class="inline">10⁻¹⁰⁰</code>. Multiply 300 and you get <code class="inline">10⁻⁶⁰⁰</code>.</p>
+  <p>Floating-point numbers have a minimum magnitude of about <code class="inline">10⁻³²⁴</code>. Anything smaller silently becomes <code class="inline">0.0</code>. This is <strong>underflow</strong> — both classes collapse to zero and the model can't tell them apart.</p>
+  <p>The fix uses <code class="inline">log(a × b) = log(a) + log(b)</code>. Instead of multiplying tiny numbers, we <em>add</em> their logs. Log probabilities are ordinary-sized negative numbers like <code class="inline">-430.7</code>.</p>
+  <div class="analogy"><div class="an-label">🧩 Analogy</div><p>A ruler showing down to 1mm reads 0.4mm and 0.0001mm identically. Switch to a logarithmic ruler and they become "−0.4" and "−4" — completely distinct.</p></div>
+
+  <h4 class="block">Interactive — the underflow race</h4>
+  <div class="panel">
+    <div class="panel-title"><span class="ic">📉</span>Products vs. log sums</div>
+    <div class="range-row">
+      <span style="font-size:13px;color:var(--text-3);white-space:nowrap">Review length</span>
+      <input type="range" id="underflowRange" min="10" max="400" step="5" value="60">
+      <span class="val" id="underflowVal">60</span>
+    </div>
+    <div class="cmp-grid" style="margin-top:18px">
+      <div class="cmp-card bad"><h6>❌ Raw product</h6><div class="readout" id="ufProduct">—</div></div>
+      <div class="cmp-card good"><h6>✅ Log-sum</h6><div class="readout" id="ufLog">—</div></div>
+    </div>
+    <div style="margin-top:20px">
+      <svg viewBox="0 0 700 240" style="width:100%;height:auto;background:var(--ink-2);border:1px solid var(--line);border-radius:11px">
+        <line x1="60" y1="20" x2="60" y2="210" stroke="#32324a"/>
+        <line x1="60" y1="210" x2="680" y2="210" stroke="#32324a"/>
+        <text x="30" y="30" fill="#807d76" font-size="10" font-family="monospace">0</text>
+        <text x="10" y="115" fill="#807d76" font-size="10" font-family="monospace">log₁₀</text>
+        <text x="18" y="215" fill="#807d76" font-size="10" font-family="monospace">-350</text>
+        <text x="66" y="228" fill="#807d76" font-size="10" font-family="monospace">10</text>
+        <text x="640" y="228" fill="#807d76" font-size="10" font-family="monospace">400 words</text>
+        <line x1="60" y1="180" x2="680" y2="180" stroke="#e0705f" stroke-width="1" stroke-dasharray="4 4" opacity=".55"/>
+        <text x="590" y="175" fill="#e0705f" font-size="9.5" font-family="monospace">underflow</text>
+        <polyline id="ufProductLine" fill="none" stroke="#e88270" stroke-width="2.5"/>
+        <polyline id="ufLogLine" fill="none" stroke="#4fd0b4" stroke-width="2.5"/>
+      </svg>
+      <div class="legend">
+        <span><span class="sw" style="background:#e88270"></span> Raw product</span>
+        <span><span class="sw" style="background:#4fd0b4"></span> Log-sum</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout key">
+    <div class="co-title">🔑 Key idea — softmax's cousin</div>
+    <p>Because <code class="inline">log</code> is monotonically increasing, comparing logs gives the same winner. You lose the actual probability, you keep everything needed for the decision. This exact pattern appears in every probabilistic ML system you'll ever meet.</p>
+  </div>
+
+  <h4 class="block">Worked code</h4>
+  <div class="code-wrap">
+    <div class="code-bar"><span class="fname"><span class="d">log space</span></span><button class="copy-btn">Copy</button></div>
+<pre><code>import math
+
+positive_log_probability = math.log(0.5)   # ≈ -0.693
+negative_log_probability = math.log(0.5)
+
+for word in words:
+    positive_probability = (
+        positive_word_counts.get(word, 0) + 1
+    ) / (positive_total_words + vocab_size)
+    negative_probability = (
+        negative_word_counts.get(word, 0) + 1
+    ) / (negative_total_words + vocab_size)
+
+    # ADD the logs — same as multiplying raw probabilities
+    positive_log_probability += math.log(positive_probability)
+    negative_log_probability += math.log(negative_probability)</code></pre>
+  </div>
+
+  <div class="callout pitfall">
+    <div class="co-title">⚠️ Pitfall — log(0) is a landmine</div>
+    <p>Without smoothing, an unseen word gives probability 0 and <code class="inline">math.log(0)</code> raises <code class="inline">ValueError</code>. Concepts 05 and 06 are a matched pair — remove either and the model breaks.</p>
+  </div>
+</section>
+
+<!-- 07 NORMALIZATION -->
+<section id="c7" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>Concept 07</div>
+    <h3 class="sec-title">From Log-Scores to <span class="accent">Confidence %</span></h3>
+    <p class="sec-desc">The model now has two big negative numbers. To turn them into a friendly percentage: subtract the max, exponentiate, divide by the total.</p>
+  </div>
+  <h4 class="block">Plain-language explanation</h4>
+  <p>Suppose the model has <code class="inline">-12.4</code> and <code class="inline">-14.1</code>. The larger one wins. But a user wants a percentage.</p>
+  <p><strong>1. Subtract the max.</strong> <code class="inline">exp()</code> of a large negative number underflows; <code class="inline">exp()</code> of a number ≤ 0 is always safe. Subtracting the same constant from both doesn't change ordering.<br>
+  <strong>2. Exponentiate.</strong> Back to ordinary unnormalized probabilities.<br>
+  <strong>3. Divide by the total.</strong> They now sum to 1 — a real probability distribution.</p>
+  <div class="analogy"><div class="an-label">🧩 Analogy</div><p>Two runners finish at 3:42:10 and 3:44:55. You don't need absolute times to know who won — work with <em>gaps</em>: 0 and 2:45. Same ordering, simpler numbers.</p></div>
+
+  <h4 class="block">Interactive — step through the arithmetic</h4>
+  <div class="stepper" id="stepper7">
+    <div class="step-track" id="track7"></div>
+    <div class="step-body" id="body7"></div>
+    <div class="step-controls">
+      <button class="btn prev">← Back</button>
+      <button class="btn primary next">Next →</button>
+      <span class="step-counter"></span>
+    </div>
+  </div>
+
+  <div class="callout key">
+    <div class="co-title">🔑 Key idea — this is softmax</div>
+    <p><code class="inline">exp(x - max) / Σ exp(x - max)</code> is the <strong>softmax function</strong> with the stability trick. Neural networks use it to turn logits into class probabilities in exactly this way.</p>
+  </div>
+
+  <h4 class="block">Worked code</h4>
+  <div class="code-wrap">
+    <div class="code-bar"><span class="fname"><span class="d">log-scores → confidence</span></span><button class="copy-btn">Copy</button></div>
+<pre><code># 1. shift by the max (numerical safety, no ordering change)
+max_log = max(positive_log_probability, negative_log_probability)
+
+# 2. exponentiate back to ordinary unnormalized probabilities
+positive_score = math.exp(positive_log_probability - max_log)
+negative_score = math.exp(negative_log_probability - max_log)
+
+# 3. normalize so they sum to 1
+total = positive_score + negative_score
+positive_confidence = positive_score / total
+negative_confidence = negative_score / total
+
+# 4. pick winner and report as percentage
+if positive_confidence >= negative_confidence:
+    return "Positive", positive_confidence * 100
+else:
+    return "Negative", negative_confidence * 100</code></pre>
+  </div>
+
+  <div class="callout pitfall">
+    <div class="co-title">⚠️ Pitfall — high confidence ≠ correct</div>
+    <p>Naive Bayes is notoriously <em>overconfident</em> because the independence assumption counts related words as separate votes. Treat confidence as a <em>relative</em> score, not calibrated probability.</p>
+  </div>
+</section>
+
+<!-- 08 EVALUATION -->
+<section id="c8" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>Concept 08</div>
+    <h3 class="sec-title">Train/Test Evaluation — <span class="accent">and why 100% lies</span></h3>
+    <p class="sec-desc">A classifier must be judged on data it has never seen. This project's test reviews are nearly identical to the training reviews — so the number is inflated.</p>
+  </div>
+  <h4 class="block">Plain-language explanation</h4>
+  <p>Test on the same examples you trained on, and you measure memorization. The project defines 8 test reviews with known labels and runs <code class="inline">predict_sentiment()</code> on each. Accuracy is correct ÷ total × 100.</p>
+  <div class="analogy"><div class="an-label">🧩 Analogy</div><p>A student studies 30 problems, then is tested on 8 <em>slightly reworded versions</em> of those same problems. They ace it. But a genuinely new problem might stump them. Reworded ≠ independent.</p></div>
+
+  <h4 class="block">Interactive — click to run each test</h4>
+  <div class="panel">
+    <div class="panel-title"><span class="ic">🧪</span>Run the test set one review at a time</div>
+    <div class="test-list" id="testList"></div>
+    <div class="step-controls" style="margin-top:6px">
+      <button class="btn primary" id="testAll">▶ Run all</button>
+      <button class="btn" id="testReset">↺ Reset</button>
+    </div>
+    <div class="metrics" style="margin-top:20px">
+      <div class="metric"><div class="mv teal" id="testAcc">—</div><div class="ml">Accuracy</div></div>
+      <div class="metric"><div class="mv" id="testCorrect">0 / 0</div><div class="ml">Correct</div></div>
+      <div class="metric"><div class="mv" id="testDone">0 / 8</div><div class="ml">Run</div></div>
+    </div>
+    <div style="margin-top:20px">
+      <div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:12px">Confusion matrix</div>
+      <table class="tbl" id="confMatrix">
+        <thead><tr><th></th><th style="text-align:center">Predicted Positive</th><th style="text-align:center">Predicted Negative</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">Actual Positive</td><td id="cmPP" class="cell-hit" style="text-align:center">0</td><td id="cmPN" class="cell-miss" style="text-align:center">0</td></tr>
+          <tr><td class="mono">Actual Negative</td><td id="cmNP" class="cell-miss" style="text-align:center">0</td><td id="cmNN" class="cell-hit" style="text-align:center">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout pitfall">
+    <div class="co-title">⚠️ Pitfall — this test set is contaminated</div>
+    <p>Test review <em>"This product is fantastic"</em> shares almost every word with training review <em>"The product is fantastic"</em>. The model isn't generalizing — it's seeing familiar words. <strong>100% here does not mean 100% in the real world.</strong></p>
+  </div>
+
+  <div class="callout tip">
+    <div class="co-title">💡 Pro tip — how to evaluate honestly</div>
+    <p><strong>1.</strong> Collect thousands of reviews, not 30. <strong>2.</strong> Split 80/10/10 and touch test <em>once</em>. <strong>3.</strong> Deduplicate to prevent leakage. <strong>4.</strong> Report precision, recall, F1. <strong>5.</strong> Expect 70–85% in the real world, not 100%.</p>
+  </div>
+
+  <h4 class="block">Worked code</h4>
+  <div class="code-wrap">
+    <div class="code-bar"><span class="fname"><span class="d">accuracy</span> measurement</span><button class="copy-btn">Copy</button></div>
+<pre><code>test_data = [
+    ("I really love this amazing product", "Positive"),
+    ("Excellent and wonderful service",     "Positive"),
+    ("I am very happy with the quality",    "Positive"),
+    ("This product is fantastic",           "Positive"),
+    ("I hate this terrible product",        "Negative"),
+    ("Very poor and bad quality",           "Negative"),
+    ("I am unhappy with this purchase",     "Negative"),
+    ("This was a horrible experience",      "Negative"),
+]
+
+def calculate_accuracy():
+    correct = 0
+    for review, actual in test_data:
+        predicted, confidence = predict_sentiment(review)
+        if predicted == actual:
+            correct += 1
+    return (correct / len(test_data)) * 100
+
+accuracy = calculate_accuracy()   # → 100.0 here, but leaked</code></pre>
+  </div>
+</section>
+
+<!-- 09 STREAMLIT -->
+<section id="c9" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>Concept 09</div>
+    <h3 class="sec-title">Wiring It Into a <span class="accent">Streamlit App</span></h3>
+    <p class="sec-desc">The model is done. Now it needs a face. Streamlit turns a plain Python script into an interactive web app with almost no UI code.</p>
+  </div>
+  <h4 class="block">Plain-language explanation</h4>
+  <p><strong>Streamlit</strong> renders a web page from a Python script. You call <code class="inline">st.title()</code>, <code class="inline">st.metric()</code>, <code class="inline">st.button()</code> and Streamlit turns them into HTML/JS.</p>
+  <p>Crucially: <strong>the entire script re-runs from top to bottom on every interaction</strong>. When the user clicks "Analyze", Streamlit re-executes the script, the button's condition is now true, and the prediction renders. That's why the app's "state" is just the script's local variables at that moment.</p>
+  <div class="analogy"><div class="an-label">🧩 Analogy</div><p>A <em>whiteboard that gets wiped and redrawn</em> on every click. Everything you "remember" between clicks must be stored somewhere Streamlit manages — session state — or it disappears.</p></div>
+
+  <h4 class="block">Interactive — the app pipeline</h4>
+  <div class="panel">
+    <div class="panel-title"><span class="ic">🖥️</span>Click through the app's stages</div>
+    <div class="pipe-stage" id="pipeStage">
+      <div class="pipe-node" data-stage="0"><span class="pn-ic">📥</span><div class="pn-t">Load Data</div><div class="pn-s">30 reviews</div></div>
+      <div class="pipe-node" data-stage="1"><span class="pn-ic">✂️</span><div class="pn-t">Tokenize</div><div class="pn-s">regex</div></div>
+      <div class="pipe-node" data-stage="2"><span class="pn-ic">🔢</span><div class="pn-t">Train</div><div class="pn-s">count words</div></div>
+      <div class="pipe-node" data-stage="3"><span class="pn-ic">🧠</span><div class="pn-t">Model Ready</div><div class="pn-s">counts + smoothing</div></div>
+    </div>
+    <div class="pipe-stage" id="pipeStage2">
+      <div class="pipe-node" data-stage="4"><span class="pn-ic">⌨️</span><div class="pn-t">User Types</div><div class="pn-s">st.text_area</div></div>
+      <div class="pipe-node" data-stage="5"><span class="pn-ic">🔍</span><div class="pn-t">Click Analyze</div><div class="pn-s">st.button</div></div>
+      <div class="pipe-node" data-stage="6"><span class="pn-ic">📊</span><div class="pn-t">Predict</div><div class="pn-s">log + softmax</div></div>
+      <div class="pipe-node" data-stage="7"><span class="pn-ic">✅</span><div class="pn-t">Render UI</div><div class="pn-s">st.success / error</div></div>
+    </div>
+    <div class="step-body" style="margin-top:14px" id="pipeBody">
+      <div class="step-item active" data-stage="0">
+        <h5>Stage 1 — Load Data</h5>
+        <p>The script defines <code class="inline">positive_reviews</code> and <code class="inline">negative_reviews</code> as plain Python lists — 15 each. This runs every time the app refreshes.</p>
+      </div>
+      <div class="step-item" data-stage="1"><h5>Stage 2 — Tokenize</h5><p>Each review is lowercased and run through the regex. The result is a list of words per review.</p></div>
+      <div class="step-item" data-stage="2"><h5>Stage 3 — Train</h5><p>Two loops count every word per class, building the vocab and counts. This is the "training" — instant, in-memory.</p></div>
+      <div class="step-item" data-stage="3"><h5>Stage 4 — Model Ready</h5><p>The counts, totals, and vocab_size are now available as module-level variables. The sidebar renders them as metrics.</p></div>
+      <div class="step-item" data-stage="4"><h5>Stage 5 — User Types</h5><p>The text area captures free-form input. This value only exists for the current script run.</p></div>
+      <div class="step-item" data-stage="5"><h5>Stage 6 — Click Analyze</h5><p>The button becomes true, the <code class="inline">if st.button(...)</code> block runs, and the prediction path executes.</p></div>
+      <div class="step-item" data-stage="6"><h5>Stage 7 — Predict</h5><p>Tokenize → sum logs → subtract max → exp → normalize → label + confidence.</p></div>
+      <div class="step-item" data-stage="7"><h5>Stage 8 — Render UI</h5><p>Based on the label, <code class="inline">st.success</code> or <code class="inline">st.error</code> renders the colored card. A progress bar shows confidence.</p></div>
+    </div>
+  </div>
+
+  <h4 class="block">Worked code</h4>
+  <div class="code-wrap">
+    <div class="code-bar"><span class="fname"><span class="d">Streamlit</span> UI wiring</span><button class="copy-btn">Copy</button></div>
+<pre><code>import streamlit as st
+
+st.set_page_config(page_title="Sentiment Analyzer", page_icon="😊")
+st.title("😊 Sentiment Analyzer Agent")
+
+# Sidebar metrics
+with st.sidebar:
+    st.header("📊 Model Information")
+    st.write(f"**Vocabulary Size:** {len(vocabulary)} words")
+
+# Main metrics row
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Test Accuracy", f"{accuracy:.1f}%")
+with col2:
+    st.metric("Training Reviews", 30)
+with col3:
+    st.metric("Vocabulary", len(vocabulary))
+
+# User input
+user_text = st.text_area("Write a review:", height=130)
+
+# Analyze button — script re-runs on every click
+if st.button("🔍 Analyze Sentiment", type="primary"):
+    if not user_text.strip():
+        st.warning("⚠️ Please enter some feedback.")
+    else:
+        sentiment, confidence = predict_sentiment(user_text)
+        if sentiment == "Positive":
+            st.success(f"😊 Positive — {confidence:.2f}%")
+        else:
+            st.error(f"😞 Negative — {confidence:.2f}%")
+        st.progress(int(confidence))</code></pre>
+  </div>
+
+  <div class="callout tip">
+    <div class="co-title">💡 Pro tip — session state</div>
+    <p>Because the script re-runs on every interaction, anything you want to persist between clicks (history of predictions, a counter) must go in <code class="inline">st.session_state</code>. Local variables evaporate on each rerun.</p>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section id="pipeline" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>The Whole Picture</div>
+    <h3 class="sec-title">How It All <span class="accent">Fits Together</span></h3>
+    <p class="sec-desc">Every concept in one flow. From raw text to a colored card on screen.</p>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><span class="ic">🔄</span>Click through the pipeline</div>
+    <div class="pipe-stage" id="mainPipe"></div>
+    <div class="step-body" style="margin-top:14px" id="mainPipeBody"></div>
+  </div>
+</section>
+
+<!-- TAKEAWAYS -->
+<section id="takeaways" class="fade-in">
+  <div class="sec-head">
+    <div class="sec-kicker"><span class="bar"></span>Wrap-Up</div>
+    <h3 class="sec-title">Key Takeaways &amp; <span class="accent">What This Unlocks</span></h3>
+    <p class="sec-desc">A crisp recap — and where you can go next.</p>
+  </div>
+
+  <div class="takeaway-grid">
+    <div class="takeaway"><h6>Tokenization sets the ceiling</h6><p>If your tokenizer eats contractions or drops punctuation, no amount of modeling fixes it. Garbage in, garbage out.</p></div>
+    <div class="takeaway"><h6>Naive Bayes is a counting model</h6><p>Training = build dictionaries. That's it. Fast, interpretable, hard to beat for small text data.</p></div>
+    <div class="takeaway"><h6>Smoothing is not optional</h6><p>Without +1, one unseen word zeroes the whole product and <code class="inline">log(0)</code> crashes the app.</p></div>
+    <div class="takeaway"><h6>Log space is the default</h6><p>Multiplying probabilities underflows. Sum logs. Everywhere, in every probabilistic model.</p></div>
+    <div class="takeaway"><h6>Softmax = subtract max + exp + normalize</h6><p>The same trick appears in neural nets. You've already learned it.</p></div>
+    <div class="takeaway"><h6>Test sets lie</h6><p>Leakage, duplicates, shared vocabulary — always ask "is my test set really independent?"</p></div>
+    <div class="takeaway"><h6>Confidence ≠ correctness</h6><p>Naive Bayes is overconfident. Calibrate with held-out data if the number matters.</p></div>
+    <div class="takeaway"><h6>Streamlit reruns everything</h6><p>Persist state with session_state. Local variables vanish on each click.</p></div>
+  </div>
+
+  <h4 class="block">What this unlocks next</h4>
+  <div class="next-list">
+    <div class="next-item"><span class="ni-n">01</span><div class="ni-b"><h6>TF-IDF + Logistic Regression</h6><p>Same pipeline, weighted features instead of raw counts. Usually beats Naive Bayes by 3–8%.</p></div></div>
+    <div class="next-item"><span class="ni-n">02</span><div class="ni-b"><h6>Real datasets — IMDb, Yelp, Amazon reviews</h6><p>50,000+ reviews. Now your accuracy numbers actually mean something.</p></div></div>
+    <div class="next-item"><span class="ni-n">03</span><div class="ni-b"><h6>Negation handling &amp; bigrams</h6><p>Fix the "not good" problem with token-pair features. Cheap, high-impact upgrade.</p></div></div>
+    <div class="next-item"><span class="ni-n">04</span><div class="ni-b"><h6>Word embeddings (Word2Vec, GloVe)</h6><p>Move from sparse counts to dense vectors. Words become geometry.</p></div></div>
+    <div class="next-item"><span class="ni-n">05</span><div class="ni-b"><h6>Transformer classifiers (BERT, DistilBERT)</h6><p>Fine-tune a pretrained model. 90%+ on real sentiment data. The modern production default.</p></div></div>
+    <div class="next-item"><span class="ni-n">06</span><div class="ni-b"><h6>LLM-based classification</h6><p>Prompt a language model to output a label. Zero training, surprisingly strong, expensive per call.</p></div></div>
+  </div>
+
+  <div class="callout key" style="margin-top:32px">
+    <div class="co-title">🎯 You now understand</div>
+    <p>Every line of the Sentiment Analyzer Agent. Not just what it does, but <em>why</em> each piece exists — why smoothing, why logs, why softmax, why the accuracy number lies. That's the difference between running code and understanding it.</p>
+    <p>Go build something bigger. You're ready.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Project 08 · Sentiment Analyzer Agent · Naive Bayes Machine Learning
+</footer>
+
+<script>
+// ═══════════════ TRAINING DATA ═══════════════
+const positive_reviews = [
+  "I love this product","This product is excellent","Amazing quality and great service",
+  "I am very happy with this purchase","The product is fantastic","Really good experience",
+  "Excellent customer service","I highly recommend this product","The quality is amazing",
+  "Very useful and easy to use","I am satisfied with the product","Wonderful experience",
+  "Great product and great quality","This was an excellent purchase","Absolutely loved it"
+];
+const negative_reviews = [
+  "I hate this product","This product is terrible","Very bad quality and poor service",
+  "I am unhappy with this purchase","The product is horrible","Really bad experience",
+  "Terrible customer service","I do not recommend this product","The quality is very poor",
+  "Very difficult to use","I am disappointed with the product","Awful experience",
+  "Bad product and bad quality","This was a terrible purchase","I absolutely hated it"
+];
+
+const test_data = [
+  ["I really love this amazing product", "Positive"],
+  ["Excellent and wonderful service", "Positive"],
+  ["I am very happy with the quality", "Positive"],
+  ["This product is fantastic", "Positive"],
+  ["I hate this terrible product", "Negative"],
+  ["Very poor and bad quality", "Negative"],
+  ["I am unhappy with this purchase", "Negative"],
+  ["This was a horrible experience", "Negative"]
+];
+
+// ═══════════════ TOKENIZE ═══════════════
+function tokenize(text){
+  return (text.toLowerCase().match(/\b[a-z]+\b/g)) || [];
+}
+
+// ═══════════════ TRAIN MODEL ═══════════════
+const vocabulary = new Set();
+const posCounts = {}, negCounts = {};
+let posTotal = 0, negTotal = 0;
+
+positive_reviews.forEach(r => {
+  tokenize(r).forEach(w => {
+    vocabulary.add(w);
+    posCounts[w] = (posCounts[w]||0) + 1;
+    posTotal++;
+  });
+});
+negative_reviews.forEach(r => {
+  tokenize(r).forEach(w => {
+    vocabulary.add(w);
+    negCounts[w] = (negCounts[w]||0) + 1;
+    negTotal++;
+  });
+});
+const vocabSize = vocabulary.size;
+
+// ═══════════════ PREDICT ═══════════════
+function predict(text){
+  const words = tokenize(text);
+  if(!words.length) return ["Unknown", 0];
+  let posLog = Math.log(0.5);
+  let negLog = Math.log(0.5);
+  words.forEach(w => {
+    const pp = ((posCounts[w]||0) + 1) / (posTotal + vocabSize);
+    const np = ((negCounts[w]||0) + 1) / (negTotal + vocabSize);
+    posLog += Math.log(pp);
+    negLog += Math.log(np);
+  });
+  const maxLog = Math.max(posLog, negLog);
+  const posScore = Math.exp(posLog - maxLog);
+  const negScore = Math.exp(negLog - maxLog);
+  const total = posScore + negScore;
+  const posConf = posScore / total;
+  const negConf = negScore / total;
+  if(posConf >= negConf) return ["Positive", posConf*100, posLog, negLog];
+  return ["Negative", negConf*100, posLog, negLog];
+}
+
+// ═══════════════ HERO STATS ═══════════════
+(function(){
+  const correct = test_data.filter(([r,l]) => predict(r)[0] === l).length;
+  const acc = (correct/test_data.length)*100;
+  document.getElementById('hs-vocab').textContent = vocabSize;
+  document.getElementById('hs-acc').textContent = acc.toFixed(1)+'%';
+})();
+
+// ═══════════════ TOC / NAV ═══════════════
+const tocLinks = document.querySelectorAll('.toc a');
+const sections = document.querySelectorAll('section');
+const toc = document.getElementById('toc');
+const tocToggle = document.getElementById('tocToggle');
+const tocBackdrop = document.getElementById('tocBackdrop');
+
+tocToggle.addEventListener('click', () => {
+  toc.classList.toggle('open');
+  tocBackdrop.classList.toggle('show');
+});
+tocBackdrop.addEventListener('click', () => {
+  toc.classList.remove('open');
+  tocBackdrop.classList.remove('show');
+});
+tocLinks.forEach(a => {
+  a.addEventListener('click', () => {
+    if(window.innerWidth <= 900){
+      toc.classList.remove('open');
+      tocBackdrop.classList.remove('show');
+    }
+  });
+});
+
+// ═══════════════ CONCEPT MAP CLICKS ═══════════════
+document.querySelectorAll('.map-node').forEach(node => {
+  node.addEventListener('click', () => {
+    const target = node.dataset.target;
+    const el = document.getElementById(target);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+});
+
+// ═══════════════ READ PROGRESS + ACTIVE TOC ═══════════════
+const readProgress = document.getElementById('readProgress');
+function updateProgress(){
+  const h = document.documentElement;
+  const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+  readProgress.style.width = pct + '%';
+}
+function updateActiveToc(){
+  let current = '';
+  sections.forEach(s => {
+    const top = s.offsetTop - 120;
+    if(window.scrollY >= top) current = s.id;
+  });
+  tocLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+  });
+}
+window.addEventListener('scroll', () => { updateProgress(); updateActiveToc(); });
+updateActiveToc();
+
+// ═══════════════ FADE-IN OBSERVER ═══════════════
+const fadeObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('vis'); });
+}, {threshold:0.08});
+document.querySelectorAll('.fade-in').forEach(el => fadeObs.observe(el));
+
+// ═══════════════ COPY BUTTONS ═══════════════
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pre = btn.closest('.code-wrap').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.textContent = '✓ Copied';
+      btn.classList.add('done');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1600);
+    });
+  });
+});
+
+// ═══════════════ STEPPER HELPER ═══════════════
+function buildStepper(trackEl, bodyEl, steps, onStep){
+  trackEl.innerHTML = '';
+  bodyEl.innerHTML = '';
+  let current = 0;
+  steps.forEach((s, i) => {
+    if(i > 0){
+      const c = document.createElement('div');
+      c.className = 'step-conn'; c.dataset.i = i;
+      trackEl.appendChild(c);
+    }
+    const d = document.createElement('button');
+    d.className = 'step-dot'; d.dataset.i = i;
+    d.innerHTML = '<span class="circle">'+(i+1)+'</span>';
+    d.addEventListener('click', () => go(i));
+    trackEl.appendChild(d);
+
+    const item = document.createElement('div');
+    item.className = 'step-item';
+    item.innerHTML = '<h5>'+s.title+'</h5><p>'+s.body+'</p>';
+    bodyEl.appendChild(item);
+  });
+  const prev = trackEl.parentElement.querySelector('.prev');
+  const next = trackEl.parentElement.querySelector('.next');
+  const counter = trackEl.parentElement.querySelector('.step-counter');
+  function go(i){
+    current = Math.max(0, Math.min(steps.length-1, i));
+    trackEl.querySelectorAll('.step-dot').forEach((d, idx) => {
+      d.classList.toggle('active', idx === current);
+      d.classList.toggle('done', idx < current);
+    });
+    trackEl.querySelectorAll('.step-conn').forEach((c, idx) => {
+      c.classList.toggle('done', idx < current);
+    });
+    bodyEl.querySelectorAll('.step-item').forEach((it, idx) => {
+      it.classList.toggle('active', idx === current);
+    });
+    if(prev) prev.disabled = current === 0;
+    if(next) next.disabled = current === steps.length-1;
+    if(counter) counter.textContent = (current+1)+' / '+steps.length;
+    if(onStep) onStep(current);
+  }
+  if(prev) prev.onclick = () => go(current-1);
+  if(next) next.onclick = () => go(current+1);
+  go(0);
+}
+
+// Stepper 1 (tokenization) — decorative, uses HTML already in place
+(function(){
+  const track = document.getElementById('track1');
+  const body = document.getElementById('body1');
+  if(!track || !body) return;
+  const items = Array.from(body.querySelectorAll('.step-item'));
+  track.innerHTML = '';
+  let current = 0;
+  items.forEach((_, i) => {
+    if(i > 0){
+      const c = document.createElement('div');
+      c.className = 'step-conn'; c.dataset.i = i;
+      track.appendChild(c);
+    }
+    const d = document.createElement('button');
+    d.className = 'step-dot'; d.dataset.i = i;
+    d.innerHTML = '<span class="circle">'+(i+1)+'</span>';
+    d.addEventListener('click', () => go(i));
+    track.appendChild(d);
+  });
+  const wrapper = track.parentElement;
+  const prev = wrapper.querySelector('.prev');
+  const next = wrapper.querySelector('.next');
+  const counter = wrapper.querySelector('.step-counter');
+  function go(i){
+    current = Math.max(0, Math.min(items.length-1, i));
+    track.querySelectorAll('.step-dot').forEach((d, idx) => {
+      d.classList.toggle('active', idx === current);
+      d.classList.toggle('done', idx < current);
+    });
+    track.querySelectorAll('.step-conn').forEach((c, idx) => c.classList.toggle('done', idx < current));
+    items.forEach((it, idx) => it.classList.toggle('active', idx === current));
+    if(prev) prev.disabled = current === 0;
+    if(next) next.disabled = current === items.length-1;
+    if(counter) counter.textContent = (current+1)+' / '+items.length;
+  }
+  if(prev) prev.onclick = () => go(current-1);
+  if(next) next.onclick = () => go(current+1);
+  go(0);
+})();
+
+// ═══════════════ TOKENIZER DEMO ═══════════════
+(function(){
+  const input = document.getElementById('tokInput');
+  const out = document.getElementById('tokOut');
+  const dropped = document.getElementById('tokDropped');
+  const countEl = document.getElementById('tokCount');
+  const uniqueEl = document.getElementById('tokUnique');
+  const ratioEl = document.getElementById('tokRatio');
+  if(!input) return;
+  function render(){
+    const text = input.value;
+    const tokens = tokenize(text);
+    out.innerHTML = '';
+    tokens.forEach((t,i) => {
+      const c = document.createElement('span');
+      c.className = 'chip';
+      c.style.animationDelay = (i*0.02)+'s';
+      c.textContent = t;
+      out.appendChild(c);
+    });
+    // dropped chars
+    const kept = new Set();
+    tokens.forEach(t => kept.add(t));
+    const droppedChars = text.replace(/[a-zA-Z\s]/g, '').split('').filter(c => c.trim());
+    dropped.innerHTML = '';
+    const seen = new Set();
+    droppedChars.forEach(ch => {
+      if(seen.has(ch)) return;
+      seen.add(ch);
+      const c = document.createElement('span');
+      c.className = 'chip ghost';
+      c.textContent = ch === ' ' ? '␣' : ch;
+      dropped.appendChild(c);
+    });
+    if(!droppedChars.length) dropped.innerHTML = '<span style="color:var(--text-3);font-size:13px">(nothing dropped)</span>';
+    countEl.textContent = tokens.length;
+    uniqueEl.textContent = new Set(tokens).size;
+    ratioEl.textContent = tokens.length ? (text.length / tokens.length).toFixed(1) : '—';
+  }
+  input.addEventListener('input', render);
+  render();
+})();
+
+// ═══════════════ VOCAB BUILDER ═══════════════
+(function(){
+  const allReviews = [...positive_reviews, ...negative_reviews];
+  let idx = 0;
+  let playing = false;
+  let timer = null;
+  const vocabSeen = new Set();
+  let totalTokens = 0;
+  const revEl = document.getElementById('vbReviews');
+  const uniqEl = document.getElementById('vbUnique');
+  const totEl = document.getElementById('vbTotal');
+  const progEl = document.getElementById('vbProgress');
+  const cloud = document.getElementById('vbCloud');
+  if(!revEl) return;
+
+  function reset(){
+    idx = 0; vocabSeen.clear(); totalTokens = 0;
+    revEl.textContent = '0'; uniqEl.textContent = '0'; totEl.textContent = '0';
+    progEl.style.width = '0%'; cloud.innerHTML = '';
+    playing = false;
+    clearInterval(timer);
+  }
+  function step(){
+    if(idx >= allReviews.length) return;
+    const r = allReviews[idx];
+    const words = tokenize(r);
+    words.forEach(w => {
+      vocabSeen.add(w);
+      totalTokens++;
+      // add chip if new
+      if([...cloud.children].every(c => c.dataset.w !== w)){
+        const c = document.createElement('span');
+        c.className = 'chip';
+        c.dataset.w = w;
+        c.textContent = w;
+        cloud.appendChild(c);
+      }
+    });
+    idx++;
+    revEl.textContent = idx;
+    uniqEl.textContent = vocabSeen.size;
+    totEl.textContent = totalTokens;
+    progEl.style.width = ((idx/allReviews.length)*100)+'%';
+  }
+  document.getElementById('vbStep').onclick = () => { playing = false; clearInterval(timer); step(); };
+  document.getElementById('vbPlay').onclick = function(){
+    if(playing){ playing = false; clearInterval(timer); this.textContent = '▶ Play'; return; }
+    if(idx >= allReviews.length) reset();
+    playing = true; this.textContent = '⏸ Pause';
+    timer = setInterval(() => {
+      if(idx >= allReviews.length){ playing = false; clearInterval(timer); this.textContent = '▶ Play'; return; }
+      step();
+    }, 220);
+  };
+  document.getElementById('vbReset').onclick = () => {
+    reset();
+    document.getElementById('vbPlay').textContent = '▶ Play';
+  };
+  reset();
+})();
+
+// ═══════════════ COUNT MATRIX ═══════════════
+(function(){
+  const tbody = document.querySelector('#countTable tbody');
+  if(!tbody) return;
+  const allWords = [...vocabulary].sort();
+  function render(filter){
+    tbody.innerHTML = '';
+    allWords.forEach(w => {
+      const p = posCounts[w]||0;
+      const n = negCounts[w]||0;
+      if(filter === 'both' && !(p>0 && n>0)) return;
+      if(filter === 'pos' && !(p>0 && n===0)) return;
+      if(filter === 'neg' && !(n>0 && p===0)) return;
+      const tr = document.createElement('tr');
+      const lean = p > n ? 'Positive' : (n > p ? 'Negative' : 'Neutral');
+      const leanColor = p > n ? 'var(--teal-bright)' : (n > p ? 'var(--neg)' : 'var(--text-3)');
+      tr.innerHTML = '<td class="mono">'+w+'</td>'+
+        '<td style="text-align:center;font-family:var(--mono);color:var(--teal-bright)">'+p+'</td>'+
+        '<td style="text-align:center;font-family:var(--mono);color:var(--neg)">'+n+'</td>'+
+        '<td style="text-align:center;font-family:var(--mono);font-size:12px;color:'+leanColor+'">'+lean+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+  document.getElementById('cmAll').onclick = () => render('all');
+  document.getElementById('cmBoth').onclick = () => render('both');
+  document.getElementById('cmPos').onclick = () => render('pos');
+  document.getElementById('cmNeg').onclick = () => render('neg');
+  document.getElementById('cmPosTotal').textContent = posTotal;
+  document.getElementById('cmNegTotal').textContent = negTotal;
+  document.getElementById('cmVocab').textContent = vocabSize;
+  render('all');
+})();
+
+// ═══════════════ EVIDENCE BUILDER ═══════════════
+(function(){
+  const words = ['good','great','excellent','amazing','love','happy','bad','terrible','horrible','hate','poor','not'];
+  const container = document.getElementById('evidenceWords');
+  const picked = document.getElementById('evidencePicked');
+  const evPos = document.getElementById('evPos');
+  const evNeg = document.getElementById('evNeg');
+  const evPosLog = document.getElementById('evPosLog');
+  const evNegLog = document.getElementById('evNegLog');
+  const evVerdict = document.getElementById('evVerdict');
+  if(!container) return;
+  const chosen = [];
+
+  function recompute(){
+    if(!chosen.length){
+      evPos.style.width = '50%'; evNeg.style.width = '50%';
+      evPos.textContent = '50.0%'; evNeg.textContent = '50.0%';
+      evPosLog.textContent = Math.log(0.5).toFixed(3);
+      evNegLog.textContent = Math.log(0.5).toFixed(3);
+      evVerdict.textContent = 'Tie';
+      evVerdict.style.color = 'var(--text-3)';
+      return;
+    }
+    let posLog = Math.log(0.5), negLog = Math.log(0.5);
+    chosen.forEach(w => {
+      const pp = ((posCounts[w]||0) + 1) / (posTotal + vocabSize);
+      const np = ((negCounts[w]||0) + 1) / (negTotal + vocabSize);
+      posLog += Math.log(pp);
+      negLog += Math.log(np);
+    });
+    const maxLog = Math.max(posLog, negLog);
+    const ps = Math.exp(posLog - maxLog);
+    const ns = Math.exp(negLog - maxLog);
+    const t = ps + ns;
+    const pc = ps/t*100, nc = ns/t*100;
+    evPos.style.width = pc+'%'; evNeg.style.width = nc+'%';
+    evPos.textContent = pc.toFixed(1)+'%'; evNeg.textContent = nc.toFixed(1)+'%';
+    evPosLog.textContent = posLog.toFixed(3);
+    evNegLog.textContent = negLog.toFixed(3);
+    if(pc > nc){ evVerdict.textContent = 'Positive'; evVerdict.style.color = 'var(--teal-bright)'; }
+    else if(nc > pc){ evVerdict.textContent = 'Negative'; evVerdict.style.color = 'var(--neg)'; }
+    else { evVerdict.textContent = 'Tie'; evVerdict.style.color = 'var(--text-3)'; }
+  }
+
+  function renderPicked(){
+    picked.innerHTML = '';
+    if(!chosen.length){
+      picked.innerHTML = '<span style="color:var(--text-3);font-size:13.5px">(empty — click a word above)</span>';
+      return;
+    }
+    chosen.forEach((w, i) => {
+      const c = document.createElement('span');
+      c.className = 'chip';
+      c.textContent = w;
+      picked.appendChild(c);
+    });
+  }
+
+  words.forEach(w => {
+    const c = document.createElement('span');
+    c.className = 'chip ghost';
+    c.textContent = w;
+    c.onclick = () => {
+      chosen.push(w);
+      renderPicked();
+      recompute();
+    };
+    container.appendChild(c);
+  });
+  document.getElementById('evClear').onclick = () => {
+    chosen.length = 0;
+    renderPicked();
+    recompute();
+  };
+  renderPicked();
+  recompute();
+})();
+
+// ═══════════════ STEPPER 7 (Normalization) ═══════════════
+(function(){
+  const steps = [
+    {title:'Step 1 — Start with the two log-scores', body:'After summing every word\'s log-probability, we have two ordinary negative numbers. The larger points at the predicted class. But these aren\'t probabilities — they don\'t sum to 1 and aren\'t in [0, 1].'},
+    {title:'Step 2 — Find the maximum', body:'<code class="inline">max_log = max(posLog, negLog)</code>. This is the numerical-stability anchor.'},
+    {title:'Step 3 — Subtract the max from both', body:'Both values shift so the larger becomes exactly 0 and the smaller becomes a negative gap. The difference between them — the only thing that matters — is unchanged.'},
+    {title:'Step 4 — Exponentiate', body:'<code class="inline">exp(0) = 1.0</code> and <code class="inline">exp(-1.7) ≈ 0.183</code>. Both values are now positive and ≤ 1. This is the step that underflows if you skip step 3.'},
+    {title:'Step 5 — Sum to get the total', body:'<code class="inline">total = 1.0 + 0.183 = 1.183</code>. This normalizing constant turns the two values into a proper distribution.'},
+    {title:'Step 6 — Divide each by the total', body:'Positive: 1.0 / 1.183 ≈ 0.845. Negative: 0.183 / 1.183 ≈ 0.155. They now sum to 1.0.'},
+    {title:'Step 7 — Multiply by 100 for display', body:'<code class="inline">0.845 × 100 = 84.5%</code>. This is what the user sees as "Confidence". The app discards the loser\'s percentage.'}
+  ];
+  const track = document.getElementById('track7');
+  const body = document.getElementById('body7');
+  if(!track) return;
+  buildStepper(track, body, steps);
+})();
+
+// ═══════════════ UNDERFLOW RACE ═══════════════
+(function(){
+  const range = document.getElementById('underflowRange');
+  const valEl = document.getElementById('underflowVal');
+  const prodEl = document.getElementById('ufProduct');
+  const logEl = document.getElementById('ufLog');
+  const prodLine = document.getElementById('ufProductLine');
+  const logLine = document.getElementById('ufLogLine');
+  if(!range) return;
+
+  function update(){
+    const n = parseInt(range.value, 10);
+    valEl.textContent = n;
+    // assume each word contributes probability ~0.01 (log = -4.6)
+    const logPerWord = Math.log(0.01);
+    const logSum = 0.5 * logPerWord * n;          // half-ish
+    const log10 = logSum / Math.LN10;
+    // raw product underflows at log10 < -324
+    let prodDisplay;
+    if(log10 < -320) prodDisplay = '0.0  (underflowed)';
+    else prodDisplay = Math.pow(10, log10).toExponential(2);
+    prodEl.textContent = prodDisplay;
+    logEl.textContent = log10.toFixed(1) + '  (log₁₀)';
+
+    // chart: x maps 10..400, y maps 0..-350
+    const x = (w) => 60 + ((w - 10) / 390) * 620;
+    const y = (v) => 20 + (Math.max(-350, Math.min(0, v)) / -350) * 190;
+
+    // product curve (clamps at -350)
+    let prodPts = [];
+    for(let w = 10; w <= 400; w += 10){
+      const lp = 0.5 * Math.log(0.01) * w / Math.LN10;
+      prodPts.push(x(w)+','+y(Math.max(lp, -350)));
+    }
+    prodLine.setAttribute('points', prodPts.join(' '));
+
+    // log curve (goes to -350 slower)
+    let logPts = [];
+    for(let w = 10; w <= 400; w += 10){
+      const lp = -0.4 * w / Math.LN10 * Math.LN10; // realistic-ish
+      const realistic = -0.9 * w / 2.3;
+      logPts.push(x(w)+','+y(Math.max(realistic, -350)));
+    }
+    logLine.setAttribute('points', logPts.join(' '));
+  }
+  range.addEventListener('input', update);
+  update();
+})();
+
+// ═══════════════ ALPHA SMOOTHING DEMO ═══════════════
+(function(){
+  const range = document.getElementById('alphaRange');
+  const valEl = document.getElementById('alphaVal');
+  const posOut = document.getElementById('alphaPosOut');
+  const negOut = document.getElementById('alphaNegOut');
+  const warn = document.getElementById('alphaWarn');
+  if(!range) return;
+  let word = 'amazing';
+
+  function update(){
+    const a = parseFloat(range.value);
+    valEl.textContent = a.toFixed(2);
+    const pc = posCounts[word]||0;
+    const nc = negCounts[word]||0;
+    const pp = (pc + a) / (posTotal + a * vocabSize);
+    const np = (nc + a) / (negTotal + a * vocabSize);
+    posOut.innerHTML = 'count = '+pc+'<br>P(word | positive) = <strong style="color:var(--teal-bright)">'+pp.toFixed(6)+'</strong><br>log(P) = '+(pp>0?Math.log(pp).toFixed(3):'—')+'';
+    negOut.innerHTML = 'count = '+nc+'<br>P(word | negative) = <strong style="color:var(--neg)">'+np.toFixed(6)+'</strong><br>log(P) = '+(np>0?Math.log(np).toFixed(3):'—')+'';
+    if(a === 0 && nc === 0){
+      warn.innerHTML = '<div class="callout pitfall" style="margin:0"><div class="co-title">⚠️ α = 0 with unseen word</div><p>P = 0 exactly. In Python, <code class="inline">math.log(0)</code> raises <code class="inline">ValueError: math domain error</code>. The program would crash.</p></div>';
+    } else if(a === 0 && nc > 0){
+      warn.innerHTML = '<div class="callout tip" style="margin:0"><div class="co-title">💡 α = 0</div><p>This word happens to appear in both classes, so no zero appears. Try <strong>amazing</strong> or <strong>excellent</strong> — they never appear in negative reviews.</p></div>';
+    } else {
+      warn.innerHTML = '';
+    }
+  }
+  document.querySelectorAll('[data-word]').forEach(b => {
+    b.onclick = () => { word = b.dataset.word; update(); };
+  });
+  range.addEventListener('input', update);
+  update();
+})();
+
+// ═══════════════ TEST BENCH ═══════════════
+(function(){
+  const list = document.getElementById('testList');
+  if(!list) return;
+  const state = { run: [], correct: 0 };
+  const cm = {PP:0,PN:0,NP:0,NN:0};
+
+  function buildRow(i){
+    const [text, label] = test_data[i];
+    const row = document.createElement('button');
+    row.className = 'test-row';
+    row.dataset.i = i;
+    row.innerHTML = '<span class="idx">'+(i+1)+'</span>'+
+      '<span class="txt">'+text+'</span>'+
+      '<span class="q">?</span>';
+    row.onclick = () => runRow(i);
+    return row;
+  }
+  test_data.forEach((_, i) => list.appendChild(buildRow(i)));
+
+  function runRow(i){
+    const row = list.querySelector('.test-row[data-i="'+i+'"]');
+    if(row.classList.contains('revealed')) return;
+    const [text, actual] = test_data[i];
+    const [predicted, conf] = predict(text);
+    const ok = predicted === actual;
+    row.classList.add('revealed');
+    row.querySelector('.q').outerHTML =
+      '<span class="res '+(ok?'ok':'bad')+'">'+predicted+' · '+conf.toFixed(1)+'%</span>';
+    state.run.push(i);
+    if(ok) state.correct++;
+    if(actual === 'Positive' && predicted === 'Positive') cm.PP++;
+    else if(actual === 'Positive' && predicted === 'Negative') cm.PN++;
+    else if(actual === 'Negative' && predicted === 'Positive') cm.NP++;
+    else cm.NN++;
+    updateStats();
+  }
+
+  function updateStats(){
+    const done = state.run.length;
+    document.getElementById('testDone').textContent = done + ' / ' + test_data.length;
+    document.getElementById('testCorrect').textContent = state.correct + ' / ' + done;
+    const acc = done ? (state.correct/done*100) : 0;
+    document.getElementById('testAcc').textContent = done ? acc.toFixed(1)+'%' : '—';
+    document.getElementById('cmPP').textContent = cm.PP;
+    document.getElementById('cmPN').textContent = cm.PN;
+    document.getElementById('cmNP').textContent = cm.NP;
+    document.getElementById('cmNN').textContent = cm.NN;
+  }
+
+  document.getElementById('testAll').onclick = () => {
+    test_data.forEach((_, i) => runRow(i));
+  };
+  document.getElementById('testReset').onclick = () => {
+    list.innerHTML = '';
+    test_data.forEach((_, i) => list.appendChild(buildRow(i)));
+    state.run = []; state.correct = 0;
+    cm.PP = cm.PN = cm.NP = cm.NN = 0;
+    updateStats();
+  };
+  updateStats();
+})();
+
+// ═══════════════ PIPELINE STAGES ═══════════════
+(function(){
+  const body = document.getElementById('pipeBody');
+  if(!body) return;
+  const nodes = document.querySelectorAll('#pipeStage .pipe-node, #pipeStage2 .pipe-node');
+  const items = body.querySelectorAll('.step-item');
+  function go(stage){
+    nodes.forEach(n => {
+      n.classList.toggle('active', parseInt(n.dataset.stage) === stage);
+      n.classList.toggle('done', parseInt(n.dataset.stage) < stage);
+    });
+    items.forEach(it => {
+      it.classList.toggle('active', parseInt(it.dataset.stage) === stage);
+    });
+  }
+  nodes.forEach(n => {
+    n.addEventListener('click', () => go(parseInt(n.dataset.stage)));
+  });
+  go(0);
+})();
+
+// ═══════════════ MAIN PIPELINE (bottom) ═══════════════
+(function(){
+  const stage = document.getElementById('mainPipe');
+  const body = document.getElementById('mainPipeBody');
+  if(!stage) return;
+  const stages = [
+    {ic:'📥', t:'Raw Reviews', s:'30 strings', title:'Raw Reviews', desc:'A Python list of 30 short review strings — 15 labeled positive, 15 labeled negative.'},
+    {ic:'✂️', t:'Tokenize', s:'regex', title:'Tokenize', desc:'Each review is lowercased and passed through <code class="inline">re.findall(r"\\b[a-z]+\\b", text)</code>. Output: a list of tokens.'},
+    {ic:'📚', t:'Vocabulary', s:'set', title:'Build Vocabulary', desc:'Every token is added to a set. Duplicates collapse. The final size is <code class="inline">vocab_size</code>.'},
+    {ic:'🔢', t:'Count', s:'per class', title:'Count Words Per Class', desc:'Nested loops build <code class="inline">positive_word_counts</code>, <code class="inline">negative_word_counts</code>, and the two totals.'},
+    {ic:'🧠', t:'Model Ready', s:'O(1) predict', title:'Model Is Ready', desc:'Training is done. The counts dictionaries ARE the model. No further computation needed.'},
+    {ic:'⌨️', t:'User Input', s:'text_area', title:'User Types a Review', desc:'Streamlit captures free-form text. On click, the script re-runs and the prediction path executes.'},
+    {ic:'🔍', t:'Predict', s:'Bayes + logs', title:'Run the Classifier', desc:'Tokenize the input, sum log-probabilities with smoothing, subtract max, exponentiate, normalize.'},
+    {ic:'✅', t:'Render', s:'success/error', title:'Render the Result', desc:'<code class="inline">st.success()</code> or <code class="inline">st.error()</code> shows a colored card with the label and confidence.'}
+  ];
+  stage.innerHTML = '';
+  stages.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'pipe-node';
+    d.dataset.s = i;
+    d.innerHTML = '<span class="pn-ic">'+s.ic+'</span><div class="pn-t">'+s.t+'</div><div class="pn-s">'+s.s+'</div>';
+    d.onclick = () => go(i);
+    stage.appendChild(d);
+  });
+  body.innerHTML = '';
+  stages.forEach((s, i) => {
+    const it = document.createElement('div');
+    it.className = 'step-item';
+    it.dataset.s = i;
+    it.innerHTML = '<h5>'+s.title+'</h5><p>'+s.desc+'</p>';
+    body.appendChild(it);
+  });
+  function go(i){
+    stage.querySelectorAll('.pipe-node').forEach(n => {
+      const idx = parseInt(n.dataset.s);
+      n.classList.toggle('active', idx === i);
+      n.classList.toggle('done', idx < i);
+    });
+    body.querySelectorAll('.step-item').forEach(it => {
+      it.classList.toggle('active', parseInt(it.dataset.s) === i);
+    });
+  }
+  go(0);
+})();
+
+</script>
+</body>
+</html>

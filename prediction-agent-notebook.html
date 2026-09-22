@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediction Agent — Learning Notebook</title>
+<style>
+  :root{
+    --bg:#12141a;
+    --bg-alt:#181b23;
+    --surface:#1e2129;
+    --surface-2:#262a34;
+    --border:#323847;
+    --text:#eae7e0;
+    --text-dim:#a3a8b5;
+    --text-faint:#6b7280;
+    --amber:#e8a33d;
+    --amber-dim:#a97a30;
+    --teal:#5fb4a2;
+    --red:#d1585a;
+    --font-display:Georgia,'Iowan Old Style','Palatino Linotype',serif;
+    --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    --font-mono:'SF Mono','Cascadia Code',Consolas,'Courier New',monospace;
+    --toc-w:252px;
+    --content-w:700px;
+  }
+  *{box-sizing:border-box;}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+  html{scroll-behavior:smooth; scroll-padding-top:24px;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--amber); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  :focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
+
+  h1,h2,h3{font-family:var(--font-display); font-weight:600; line-height:1.2; margin:0 0 .5em;}
+  h1{font-size:clamp(2rem,5vw,3.1rem); letter-spacing:-0.01em;}
+  h2{font-size:clamp(1.5rem,3vw,2rem); color:var(--text);}
+  h3{font-size:1.15rem; color:var(--amber); font-weight:600;}
+  p{margin:0 0 1em; color:var(--text-dim); max-width:62ch;}
+  strong{color:var(--text);}
+  code{font-family:var(--font-mono); font-size:.88em; background:var(--surface-2); padding:.12em .4em; border-radius:4px; color:var(--amber);}
+
+  /* ===== layout shell ===== */
+  .shell{display:flex; max-width:1180px; margin:0 auto;}
+  main{flex:1; min-width:0; padding:0 24px 120px; max-width:var(--content-w); margin:0 auto;}
+
+  /* ===== TOC ===== */
+  #toc{
+    width:var(--toc-w); flex-shrink:0; position:sticky; top:0; align-self:flex-start;
+    height:100vh; overflow-y:auto; padding:32px 8px 32px 24px; font-size:.86rem;
+  }
+  #toc .toc-title{color:var(--text-faint); font-size:.72rem; letter-spacing:.04em; margin-bottom:14px;}
+  #toc ol{list-style:none; margin:0; padding:0; counter-reset:toc;}
+  #toc li{counter-increment:toc; margin-bottom:2px;}
+  #toc a{
+    display:flex; gap:10px; color:var(--text-faint); padding:6px 10px; border-radius:6px;
+    border-left:2px solid transparent; transition:color .15s, border-color .15s, background .15s;
+  }
+  #toc a::before{content:counter(toc); font-family:var(--font-mono); font-size:.72rem; color:var(--text-faint); width:1.2em;}
+  #toc a:hover{color:var(--text); text-decoration:none; background:var(--surface);}
+  #toc a.active{color:var(--amber); border-left-color:var(--amber); background:var(--surface);}
+  #toc a.active::before{color:var(--amber);}
+
+  #toc-toggle{display:none;}
+  @media (max-width:920px){
+    #toc{
+      position:fixed; top:0; left:0; height:100vh; width:78vw; max-width:320px;
+      background:var(--bg-alt); border-right:1px solid var(--border); z-index:50;
+      transform:translateX(-100%); transition:transform .25s ease; padding-top:64px;
+    }
+    #toc.open{transform:translateX(0);}
+    #toc-toggle{
+      display:flex; position:fixed; top:14px; left:14px; z-index:60; width:40px; height:40px;
+      background:var(--surface); border:1px solid var(--border); border-radius:8px; align-items:center;
+      justify-content:center; cursor:pointer; color:var(--text);
+    }
+    #toc-scrim{display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:40;}
+    #toc-scrim.open{display:block;}
+    main{max-width:100%; padding-top:70px;}
+  }
+
+  /* ===== hero ===== */
+  .hero{padding:64px 0 40px; border-bottom:1px solid var(--border); margin-bottom:56px;}
+  .hero .eyebrow{color:var(--amber); font-family:var(--font-mono); font-size:.82rem; margin-bottom:14px;}
+  .hero p.lede{font-size:1.15rem; color:var(--text-dim); max-width:56ch;}
+  .hero-facts{display:flex; gap:28px; flex-wrap:wrap; margin-top:28px;}
+  .hero-fact .n{font-family:var(--font-display); font-size:1.7rem; color:var(--amber); display:block;}
+  .hero-fact .l{font-size:.8rem; color:var(--text-faint);}
+
+  /* ===== sections ===== */
+  section.concept{padding:56px 0; border-bottom:1px solid var(--border); scroll-margin-top:24px;}
+  section.concept:last-of-type{border-bottom:none;}
+  .concept-num{font-family:var(--font-mono); color:var(--text-faint); font-size:.85rem; margin-bottom:6px;}
+  .sub-block{margin:28px 0;}
+  .sub-label{font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); margin-bottom:10px; font-family:var(--font-mono);}
+
+  /* ===== callouts ===== */
+  .callout{border-radius:10px; padding:16px 18px; margin:20px 0; border:1px solid var(--border); background:var(--surface);}
+  .callout.tip{border-left:3px solid var(--teal);}
+  .callout.pitfall{border-left:3px solid var(--red);}
+  .callout .callout-label{font-family:var(--font-mono); font-size:.75rem; margin-bottom:6px; display:block;}
+  .callout.tip .callout-label{color:var(--teal);}
+  .callout.pitfall .callout-label{color:var(--red);}
+  .callout p{margin:0; max-width:none;}
+
+  .analogy{background:var(--bg-alt); border-radius:10px; padding:16px 18px; margin:16px 0; border:1px dashed var(--border);}
+  .analogy p{margin:0;}
+
+  /* ===== widget shell ===== */
+  .widget{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; margin:18px 0;}
+  .widget-row{display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;}
+  .widget canvas{width:100%; height:auto; display:block; background:var(--bg-alt); border-radius:8px;}
+  .controls{flex:1; min-width:220px; display:flex; flex-direction:column; gap:16px;}
+  .slider-row label{display:flex; justify-content:space-between; font-size:.85rem; color:var(--text-dim); margin-bottom:6px;}
+  .slider-row .val{color:var(--amber); font-family:var(--font-mono);}
+  input[type=range]{width:100%; accent-color:var(--amber); background:transparent;}
+  .readout{display:flex; gap:18px; flex-wrap:wrap; margin-top:4px;}
+  .readout .item{background:var(--bg-alt); border-radius:8px; padding:8px 12px; min-width:88px;}
+  .readout .item .k{font-size:.68rem; color:var(--text-faint); font-family:var(--font-mono);}
+  .readout .item .v{font-family:var(--font-mono); font-size:1.05rem; color:var(--text);}
+  .readout .item.hot .v{color:var(--red);}
+  .readout .item.good .v{color:var(--teal);}
+
+  button.btn{
+    font-family:var(--font-body); font-weight:600; font-size:.86rem; color:var(--bg);
+    background:var(--amber); border:none; border-radius:8px; padding:9px 16px; cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  button.btn:hover{filter:brightness(1.08);}
+  button.btn:active{transform:scale(.97);}
+  button.btn.secondary{background:transparent; color:var(--text-dim); border:1px solid var(--border);}
+  button.btn.secondary:hover{color:var(--text); border-color:var(--text-faint);}
+  .btn-row{display:flex; gap:10px; flex-wrap:wrap;}
+
+  /* ===== code blocks ===== */
+  .code-block{position:relative; margin:16px 0; border-radius:10px; overflow:hidden; border:1px solid var(--border);}
+  .code-block .code-head{
+    display:flex; justify-content:space-between; align-items:center; background:var(--surface-2);
+    padding:8px 14px; font-family:var(--font-mono); font-size:.72rem; color:var(--text-faint);
+  }
+  .code-block pre{margin:0; padding:16px; overflow-x:auto; background:var(--bg-alt); font-family:var(--font-mono); font-size:.83rem; line-height:1.55;}
+  .code-block .cm{color:var(--text-faint); font-style:italic;}
+  .code-block .kw{color:var(--amber);}
+  .code-block .fn{color:var(--teal);}
+  .code-block .num{color:#c98bd6;}
+  .copy-btn{
+    background:transparent; border:1px solid var(--border); color:var(--text-faint); font-size:.72rem;
+    font-family:var(--font-mono); padding:3px 9px; border-radius:6px; cursor:pointer;
+  }
+  .copy-btn:hover{color:var(--text); border-color:var(--text-faint);}
+  .copy-btn.copied{color:var(--teal); border-color:var(--teal);}
+
+  /* ===== concept map ===== */
+  .concept-map{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px; margin:24px 0;}
+  .concept-map svg{width:100%; height:auto; display:block;}
+  .map-node rect{fill:var(--bg-alt); stroke:var(--border); stroke-width:1.5; transition:stroke .15s, fill .15s;}
+  .map-node text{fill:var(--text-dim); font-family:var(--font-body); font-size:13px;}
+  .map-node .num{fill:var(--text-faint); font-family:var(--font-mono); font-size:11px;}
+  .map-node{cursor:pointer;}
+  .map-node:hover rect{stroke:var(--amber);}
+  .map-node:hover text{fill:var(--text);}
+  .map-arrow{stroke:var(--border); stroke-width:1.5; marker-end:url(#arrowhead);}
+
+  /* ===== pipeline / flow diagrams ===== */
+  .flow{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; margin:18px 0;}
+  .flow svg{width:100%; height:auto; display:block;}
+  .flow-box rect{fill:var(--bg-alt); stroke:var(--border); stroke-width:1.5; transition:stroke .2s, fill .2s;}
+  .flow-box.active rect{stroke:var(--amber); stroke-width:2; fill:#241d10;}
+  .flow-box text{fill:var(--text-dim); font-family:var(--font-body); font-size:12.5px;}
+  .flow-box.active text{fill:var(--amber);}
+  .flow-box .sub{fill:var(--text-faint); font-size:10.5px;}
+  .flow-arrow{stroke:var(--border); stroke-width:1.5; marker-end:url(#arrowhead2); fill:none;}
+  .flow-arrow.active{stroke:var(--amber);}
+  .flow-caption{min-height:1.4em; color:var(--amber); font-family:var(--font-mono); font-size:.82rem; margin-top:12px;}
+
+  /* ===== step reveal ===== */
+  .step-list{display:flex; flex-direction:column; gap:0; margin:18px 0;}
+  .step-item{
+    border:1px solid var(--border); border-left:3px solid var(--border); background:var(--surface);
+    padding:14px 16px; margin-bottom:8px; border-radius:0 8px 8px 0; cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .step-item.active{border-left-color:var(--amber); background:var(--surface-2);}
+  .step-item .step-title{display:flex; align-items:center; gap:10px; font-weight:600; color:var(--text);}
+  .step-item .step-title .idx{
+    font-family:var(--font-mono); font-size:.75rem; width:22px; height:22px; border-radius:50%; border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; color:var(--text-faint); flex-shrink:0;
+  }
+  .step-item.active .step-title .idx{border-color:var(--amber); color:var(--amber);}
+  .step-item .step-body{max-height:0; overflow:hidden; transition:max-height .2s ease;}
+  .step-item.active .step-body{max-height:200px; margin-top:8px;}
+  .step-item .step-body p{margin:0; font-size:.9rem;}
+
+  /* examples grid */
+  .example-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0;}
+  .example-card{background:var(--bg-alt); border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center;}
+  .example-card .h{font-size:.78rem; color:var(--text-faint);}
+  .example-card .v{font-family:var(--font-display); font-size:1.4rem; color:var(--teal); margin-top:4px;}
+  @media (max-width:560px){.example-cards{grid-template-columns:1fr;}}
+
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:.88rem;}
+  th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--border);}
+  th{color:var(--text-faint); font-weight:600; font-size:.78rem;}
+  td{color:var(--text-dim);}
+
+  footer{padding:48px 0 20px; text-align:left; color:var(--text-faint); font-size:.85rem;}
+
+  .divider-label{display:flex; align-items:center; gap:12px; color:var(--text-faint); font-family:var(--font-mono); font-size:.75rem; margin:8px 0 28px;}
+  .divider-label::after{content:''; flex:1; height:1px; background:var(--border);}
+
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:.78rem; color:var(--text-faint); margin-top:8px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .legend i{width:10px; height:10px; border-radius:50%; display:inline-block;}
+</style>
+</head>
+<body>
+
+<button id="toc-toggle" aria-label="Toggle table of contents">☰</button>
+<div id="toc-scrim"></div>
+<nav id="toc">
+  <div class="toc-title">ON THIS PAGE</div>
+  <ol>
+    <li><a href="#hero">Prediction Agent</a></li>
+    <li><a href="#map">Concept map</a></li>
+    <li><a href="#c1">The linear model</a></li>
+    <li><a href="#c2">The loss function</a></li>
+    <li><a href="#c3">Gradients</a></li>
+    <li><a href="#c4">Gradient descent</a></li>
+    <li><a href="#c5">Learning rate & steps</a></li>
+    <li><a href="#c6">Streamlit & session state</a></li>
+    <li><a href="#c7">Making predictions</a></li>
+    <li><a href="#pipeline">How it fits together</a></li>
+    <li><a href="#takeaways">Takeaways</a></li>
+  </ol>
+</nav>
+
+<div class="shell">
+<main>
+
+  <section class="hero" id="hero">
+    <div class="eyebrow">MONTH 6 · PREDICTION AGENT</div>
+    <h1>A model that learns the line itself</h1>
+    <p class="lede">This project takes five data points — hours studied versus exam score — and trains a straight
+      line to fit them, without ever calling a machine-learning library. Every number in the final Streamlit app
+      comes from gradient descent, run by hand, on code you wrote. This notebook rebuilds each piece so you can
+      see, and nudge, exactly how it works.</p>
+    <div class="hero-facts">
+      <div class="hero-fact"><span class="n">5</span><span class="l">training points</span></div>
+      <div class="hero-fact"><span class="n">2</span><span class="l">parameters learned (m, c)</span></div>
+      <div class="hero-fact"><span class="n">1</span><span class="l">loop, no libraries</span></div>
+    </div>
+  </section>
+
+  <section id="map">
+    <div class="sub-label">Concepts overview</div>
+    <h2>Seven ideas, one straight line</h2>
+    <p>Click any node to jump to it. Together they explain everything <code>app.py</code> does, from the raw
+      numbers to the trained model answering a question.</p>
+    <div class="concept-map">
+      <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#323847"/>
+          </marker>
+        </defs>
+        <!-- arrows -->
+        <path class="map-arrow" d="M118,40 L212,40"/>
+        <path class="map-arrow" d="M326,40 L420,40"/>
+        <path class="map-arrow" d="M534,40 L534,90"/>
+        <path class="map-arrow" d="M534,140 L440,140" />
+        <path class="map-arrow" d="M326,140 L232,140"/>
+        <path class="map-arrow" d="M118,140 L118,190"/>
+        <path class="map-arrow" d="M118,240 L212,240"/>
+        <!-- nodes: 1 model, 2 loss, 3 gradients, 4 descent, 5 hyperparams, 6 streamlit, 7 predict -->
+        <a href="#c1"><g class="map-node" transform="translate(10,14)"><rect width="108" height="52" rx="8"/><text class="num" x="10" y="18">1</text><text x="10" y="36">Linear model</text></g></a>
+        <a href="#c2"><g class="map-node" transform="translate(218,14)"><rect width="108" height="52" rx="8"/><text class="num" x="10" y="18">2</text><text x="10" y="36">Loss (MSE)</text></g></a>
+        <a href="#c3"><g class="map-node" transform="translate(426,14)"><rect width="108" height="52" rx="8"/><text class="num" x="10" y="18">3</text><text x="10" y="36">Gradients</text></g></a>
+        <a href="#c4"><g class="map-node" transform="translate(480,114)"><rect width="108" height="52" rx="8"/><text class="num" x="10" y="18">4</text><text x="10" y="36">Grad. descent</text></g></a>
+        <a href="#c5"><g class="map-node" transform="translate(238,114)"><rect width="108" height="52" rx="8"/><text class="num" x="10" y="18">5</text><text x="10" y="36">Learning rate</text></g></a>
+        <a href="#c6"><g class="map-node" transform="translate(10,114)"><rect width="108" height="52" rx="8"/><text class="num" x="10" y="18">6</text><text x="10" y="36">Streamlit app</text></g></a>
+        <a href="#c7"><g class="map-node" transform="translate(10,214)"><rect width="108" height="52" rx="8"/><text class="num" x="10" y="18">7</text><text x="10" y="36">Predictions</text></g></a>
+        <g class="map-node" transform="translate(218,214)" onclick="location.hash='#pipeline'"><rect width="220" height="52" rx="8" style="stroke:#e8a33d;"/><text x="14" y="30" style="fill:#e8a33d;">→ See the full pipeline</text></g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 1 ============ -->
+  <section class="concept" id="c1">
+    <div class="concept-num">01 / 07</div>
+    <h2>The linear model</h2>
+    <p>Every prediction the app makes comes from one formula:</p>
+    <div class="code-block">
+      <div class="code-head"><span>predict(x, m, c)</span></div>
+      <pre>score = <span class="num">m</span> × hours + <span class="num">c</span></pre>
+    </div>
+    <p><strong>m</strong> is the slope — how many extra marks one more hour of study is worth.
+      <strong>c</strong> is the intercept — the score the line predicts at zero hours.
+      Training the model means nothing more than searching for the <code>m</code> and <code>c</code>
+      that make this line sit as close as possible to the real data.</p>
+
+    <div class="analogy">
+      <p><strong>Real-life analogy —</strong> think of a ruler laid across a scatter of dots on graph paper.
+        Tilting the ruler changes <code>m</code>; sliding it up or down changes <code>c</code>. Nobody hands you
+        the right position — you have to find it by trial and adjustment, which is exactly what the training
+        loop automates.</p>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Why it matters</div>
+      <p>Linear regression is the simplest possible predictive model, and it's the ancestor of everything more
+        complex: logistic regression, neural network layers, and even large language models all still contain a
+        <code>weight × input + bias</code> step at their core. Understanding this line means you already
+        understand the shape of the bigger equations.</p>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Interactive demonstration</div>
+      <p>Drag the sliders to move the line by hand over the five real data points from <code>day.py</code> and
+        <code>app.py</code>. Try to eyeball the best fit before you meet gradient descent in section 4.</p>
+      <div class="widget">
+        <div class="widget-row">
+          <div style="flex:2; min-width:280px;"><canvas id="cv1" width="640" height="360"></canvas></div>
+          <div class="controls">
+            <div class="slider-row">
+              <label>Slope (m) <span class="val" id="m1out">2.00</span></label>
+              <input type="range" id="m1" min="-2" max="14" step="0.1" value="2">
+            </div>
+            <div class="slider-row">
+              <label>Intercept (c) <span class="val" id="c1out">50</span></label>
+              <input type="range" id="c1" min="0" max="90" step="1" value="50">
+            </div>
+            <div class="code-block" style="margin:0;">
+              <div class="code-head"><span>equation</span></div>
+              <pre id="eq1">score = 2.00 × hours + 50</pre>
+            </div>
+            <div class="legend">
+              <span><i style="background:#5fb4a2"></i>real data</span>
+              <span><i style="background:#e8a33d"></i>your line</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Worked code example</div>
+      <div class="code-block">
+        <div class="code-head"><span>app.py</span><button class="copy-btn" data-copy="code1">Copy</button></div>
+        <pre id="code1"><span class="cm"># PREDICTION</span>
+<span class="kw">def</span> <span class="fn">predict</span>(x, m, c):
+    <span class="kw">return</span> m * x + c</pre>
+      </div>
+      <p>That's the entire prediction step. Everything else in the project exists to find good values of
+        <code>m</code> and <code>c</code> to hand this function.</p>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">PITFALL</span>
+      <p>It's tempting to think a "smarter" model needs a fancier formula. Here, the formula never changes —
+        only <code>m</code> and <code>c</code> do. Most of the intelligence in a learning system lives in the
+        <em>search</em> for parameters, not in the prediction formula itself.</p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2 ============ -->
+  <section class="concept" id="c2">
+    <div class="concept-num">02 / 07</div>
+    <h2>The loss function — Mean Squared Error</h2>
+    <p>To know whether a line is good, you need a single number that says "how wrong is this line, overall?"
+      That number is the <strong>loss</strong>. This project uses Mean Squared Error: for every point, measure
+      how far off the prediction is, square that error, then average the squares.</p>
+
+    <div class="analogy">
+      <p><strong>Real-life analogy —</strong> imagine five archers shooting at a target, and you want one score
+        for the whole team. Squaring each miss before averaging punishes wild misses far more than near-hits —
+        one arrow that's way off the mark hurts the team score more than five arrows that are each a little
+        off. That's exactly why gradient descent, guided by this loss, works so hard to eliminate large errors
+        first.</p>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Why it matters</div>
+      <p>Squaring does two jobs at once: it makes every error positive (so a +5 error and a −5 error don't
+        cancel out), and it makes big errors count disproportionately more, which gives the training loop a
+        clear signal about which mistakes to fix first.</p>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Interactive demonstration</div>
+      <p>Move the same line again — this time you'll see the error for each point as a vertical bar, and the
+        loss number update live. Try to get the loss as low as you can before checking section 4.</p>
+      <div class="widget">
+        <div class="widget-row">
+          <div style="flex:2; min-width:280px;"><canvas id="cv2" width="640" height="360"></canvas></div>
+          <div class="controls">
+            <div class="slider-row">
+              <label>Slope (m) <span class="val" id="m2out">2.00</span></label>
+              <input type="range" id="m2" min="-2" max="14" step="0.1" value="2">
+            </div>
+            <div class="slider-row">
+              <label>Intercept (c) <span class="val" id="c2out">50</span></label>
+              <input type="range" id="c2" min="0" max="90" step="1" value="50">
+            </div>
+            <div class="readout">
+              <div class="item hot"><div class="k">LOSS (MSE)</div><div class="v" id="loss2">—</div></div>
+            </div>
+            <div class="legend">
+              <span><i style="background:#d1585a"></i>error, squared</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Worked code example</div>
+      <div class="code-block">
+        <div class="code-head"><span>app.py</span><button class="copy-btn" data-copy="code2">Copy</button></div>
+        <pre id="code2"><span class="cm"># LOSS</span>
+<span class="kw">def</span> <span class="fn">calculate_loss</span>(m, c):
+    total = <span class="num">0</span>
+    <span class="kw">for</span> x, real <span class="kw">in</span> zip(hours, scores):
+        prediction = predict(x, m, c)
+        error = prediction - real
+        total += error ** <span class="num">2</span>
+    <span class="kw">return</span> total / len(hours)</pre>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-label">PRO TIP</span>
+      <p>Lower loss always means a better fit to the <em>training</em> data — but a loss of exactly 0 usually
+        means the model has memorised the five points rather than learned the underlying trend. With only five
+        points here that's mostly a curiosity, but on real projects it's the seed of overfitting.</p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 3 ============ -->
+  <section class="concept" id="c3">
+    <div class="concept-num">03 / 07</div>
+    <h2>Gradients — which way to nudge</h2>
+    <p>Loss tells you <em>how wrong</em> the line is. A gradient tells you <em>which direction</em> to move
+      <code>m</code> and <code>c</code> to make it less wrong. Concretely, the gradient is the slope of the loss
+      itself — if you nudged <code>m</code> up slightly, would the loss go up or down, and by how much?</p>
+
+    <div class="analogy">
+      <p><strong>Real-life analogy —</strong> picture standing on a hillside in thick fog, trying to reach the
+        valley floor. You can't see the whole landscape, but you can feel which way the ground slopes under
+        your feet right now. The gradient is that feeling — a local reading of "downhill" that's enough to take
+        one safe step at a time.</p>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">The logic — step through it</div>
+      <div class="step-list" id="gradSteps">
+        <div class="step-item active" data-step="0">
+          <div class="step-title"><span class="idx">1</span>For every point, find the current error</div>
+          <div class="step-body"><p><code>error = predict(x, m, c) − real</code>. This is the same error used
+            for the loss, before it gets squared.</p></div>
+        </div>
+        <div class="step-item" data-step="1">
+          <div class="step-title"><span class="idx">2</span>Weight the error by how it entered the prediction</div>
+          <div class="step-body"><p><code>m</code> was multiplied by <code>x</code>, so its gradient scales the
+            error by <code>x</code>: <code>grad_m += 2 · error · x</code>. <code>c</code> was just added, so its
+            gradient is the error alone: <code>grad_c += 2 · error</code>.</p></div>
+        </div>
+        <div class="step-item" data-step="2">
+          <div class="step-title"><span class="idx">3</span>Average across all points</div>
+          <div class="step-body"><p>Divide both totals by the number of points, so the step size doesn't depend
+            on how much data you have.</p></div>
+        </div>
+        <div class="step-item" data-step="3">
+          <div class="step-title"><span class="idx">4</span>Step in the opposite direction</div>
+          <div class="step-body"><p>A positive gradient means "increasing this parameter increases the loss" —
+            so you move the parameter the <em>other</em> way: <code>m = m − learning_rate × grad_m</code>.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Interactive demonstration</div>
+      <p>Set a starting line, then press <strong>Take one step</strong> repeatedly. Watch the arrows show which
+        way <code>m</code> and <code>c</code> are being pushed, and how the line edges toward the data.</p>
+      <div class="widget">
+        <div class="widget-row">
+          <div style="flex:2; min-width:280px;"><canvas id="cv3" width="640" height="360"></canvas></div>
+          <div class="controls">
+            <div class="readout">
+              <div class="item"><div class="k">m</div><div class="v" id="m3out">0.00</div></div>
+              <div class="item"><div class="k">c</div><div class="v" id="c3out">0.00</div></div>
+              <div class="item hot"><div class="k">LOSS</div><div class="v" id="loss3">—</div></div>
+            </div>
+            <div class="readout">
+              <div class="item"><div class="k">∂loss/∂m</div><div class="v" id="gm3">—</div></div>
+              <div class="item"><div class="k">∂loss/∂c</div><div class="v" id="gc3">—</div></div>
+            </div>
+            <div id="arrowHint" style="font-family:var(--font-mono); font-size:.85rem; color:var(--teal); min-height:1.4em;"></div>
+            <div class="btn-row">
+              <button class="btn" id="step3">Take one step →</button>
+              <button class="btn secondary" id="reset3">Reset to m=0, c=0</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Worked code example</div>
+      <div class="code-block">
+        <div class="code-head"><span>app.py</span><button class="copy-btn" data-copy="code3">Copy</button></div>
+        <pre id="code3"><span class="cm"># GRADIENTS</span>
+<span class="kw">def</span> <span class="fn">calculate_gradients</span>(m, c):
+    grad_m = <span class="num">0</span>
+    grad_c = <span class="num">0</span>
+    n = len(hours)
+    <span class="kw">for</span> x, real <span class="kw">in</span> zip(hours, scores):
+        prediction = predict(x, m, c)
+        error = prediction - real
+        grad_m += <span class="num">2</span> * error * x
+        grad_c += <span class="num">2</span> * error
+    <span class="kw">return</span> grad_m / n, grad_c / n</pre>
+      </div>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">PITFALL</span>
+      <p>It's easy to misremember the sign and add the gradient instead of subtracting it — which sends the line
+        <em>uphill</em>, making the loss worse every step. If your loss ever climbs during training, this is the
+        first thing to check.</p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 4 ============ -->
+  <section class="concept" id="c4">
+    <div class="concept-num">04 / 07</div>
+    <h2>Gradient descent — the training loop</h2>
+    <p>Gradient descent is simply: compute the gradient, take a small step against it, and repeat, over and
+      over, until the line stops improving by much. Each repetition is one training "step."</p>
+
+    <div class="analogy">
+      <p><strong>Real-life analogy —</strong> it's the same foggy hillside from section 3, but now you actually
+        walk. Feel the slope, take one small step downhill, feel the new slope, take another step. A thousand
+        small steps, each individually modest, add up to a walk all the way down to the valley.</p>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Interactive demonstration</div>
+      <p>Press <strong>Play</strong> to run the real training loop from <code>app.py</code>, one step per frame.
+        Watch the line settle and the loss curve fall.</p>
+      <div class="widget">
+        <div class="widget-row">
+          <div style="flex:2; min-width:280px;">
+            <canvas id="cv4" width="640" height="240"></canvas>
+            <canvas id="cv4loss" width="640" height="120" style="margin-top:10px;"></canvas>
+          </div>
+          <div class="controls">
+            <div class="readout">
+              <div class="item"><div class="k">STEP</div><div class="v" id="step4">0 / 1000</div></div>
+              <div class="item"><div class="k">m</div><div class="v" id="m4out">0.00</div></div>
+              <div class="item"><div class="k">c</div><div class="v" id="c4out">0.00</div></div>
+              <div class="item hot"><div class="k">LOSS</div><div class="v" id="loss4">—</div></div>
+            </div>
+            <div class="slider-row">
+              <label>Learning rate <span class="val" id="lr4out">0.01</span></label>
+              <input type="range" id="lr4" min="0.001" max="0.03" step="0.001" value="0.01">
+            </div>
+            <div class="btn-row">
+              <button class="btn" id="play4">▶ Play</button>
+              <button class="btn secondary" id="reset4">Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Worked code example</div>
+      <div class="code-block">
+        <div class="code-head"><span>app.py</span><button class="copy-btn" data-copy="code4">Copy</button></div>
+        <pre id="code4"><span class="cm"># TRAIN MODEL</span>
+<span class="kw">def</span> <span class="fn">train_model</span>(learning_rate, steps):
+    m, c = <span class="num">0</span>, <span class="num">0</span>
+    history = []
+    <span class="kw">for</span> step <span class="kw">in</span> range(steps):
+        gm, gc = calculate_gradients(m, c)
+        m = m - learning_rate * gm
+        c = c - learning_rate * gc
+        history.append(calculate_loss(m, c))
+    <span class="kw">return</span> m, c, history</pre>
+      </div>
+      <p>This is exactly the loop this widget is animating — <code>m</code> and <code>c</code> both start at
+        zero and walk toward the values that best fit the five data points.</p>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-label">PRO TIP</span>
+      <p>Storing <code>history</code> at every step, like <code>app.py</code> does, costs almost nothing and
+        gives you a free debugging tool: plot it, and a healthy training run looks like a smooth downward
+        curve that flattens out — exactly what you should see in the chart above.</p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 5 ============ -->
+  <section class="concept" id="c5">
+    <div class="concept-num">05 / 07</div>
+    <h2>Learning rate & steps</h2>
+    <p>The learning rate controls how big each step downhill is. Too small, and training crawls. Too large, and
+      each step can overshoot the valley floor and land higher up the other side — sometimes worse than where
+      it started.</p>
+
+    <div class="analogy">
+      <p><strong>Real-life analogy —</strong> back on the hillside: tiny, cautious steps get you down safely but
+        slowly. Confident strides get you there fast — but take a stride too large on a steep slope and you can
+        stumble straight past the valley and end up higher than when you started.</p>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Interactive demonstration</div>
+      <p>The same 60 training steps, run three times with three different learning rates. Press play and watch
+        how each one behaves.</p>
+      <div class="widget">
+        <div class="btn-row" style="margin-bottom:14px;">
+          <button class="btn" id="play5">▶ Run all three</button>
+          <button class="btn secondary" id="reset5">Reset</button>
+        </div>
+        <div class="example-cards" style="grid-template-columns:repeat(3,1fr);">
+          <div>
+            <canvas id="cv5a" width="200" height="160" style="width:100%;background:var(--bg-alt);border-radius:8px;"></canvas>
+            <div class="h" style="margin-top:6px;">lr = 0.002 · too small</div>
+            <div class="v" id="loss5a" style="font-size:1rem;">—</div>
+          </div>
+          <div>
+            <canvas id="cv5b" width="200" height="160" style="width:100%;background:var(--bg-alt);border-radius:8px;"></canvas>
+            <div class="h" style="margin-top:6px;">lr = 0.02 · well tuned</div>
+            <div class="v" id="loss5b" style="font-size:1rem;">—</div>
+          </div>
+          <div>
+            <canvas id="cv5c" width="200" height="160" style="width:100%;background:var(--bg-alt);border-radius:8px;"></canvas>
+            <div class="h" style="margin-top:6px;">lr = 0.2 · too large</div>
+            <div class="v" id="loss5c" style="font-size:1rem;">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Why it matters</div>
+      <p><code>app.py</code> exposes exactly this trade-off as a sidebar control, capped between 0.0001 and
+        0.1 — wide enough to feel both the "too slow" and "too aggressive" ends without letting a curious user
+        blow the model up completely.</p>
+    </div>
+
+    <table>
+      <tr><th>Sidebar control</th><th>Range in app.py</th><th>Default</th></tr>
+      <tr><td>Learning rate</td><td>0.0001 – 0.1</td><td>0.01</td></tr>
+      <tr><td>Training steps</td><td>100 – 10,000</td><td>1,000</td></tr>
+    </table>
+
+    <div class="callout pitfall">
+      <span class="callout-label">PITFALL</span>
+      <p>A loss that suddenly jumps to a huge number, or to <code>NaN</code>, almost always means the learning
+        rate is too high for the scale of your data — not a bug in the gradient code itself.</p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 6 ============ -->
+  <section class="concept" id="c6">
+    <div class="concept-num">06 / 07</div>
+    <h2>Streamlit & session state</h2>
+    <p>Training math is only half the project — the other half is turning it into an app someone can actually
+      click through. <code>app.py</code> organises this into three tabs, and uses
+      <code>st.session_state</code> as memory that survives between them.</p>
+
+    <div class="analogy">
+      <p><strong>Real-life analogy —</strong> Streamlit reruns your entire script from top to bottom on every
+        click, like restarting a play from scene one each time the audience claps. <code>session_state</code>
+        is the one prop the actors are allowed to carry with them between restarts — without it, the model you
+        trained in the Train tab would be forgotten the instant you opened Predict.</p>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">The logic — step through the app</div>
+      <div class="flow">
+        <svg viewBox="0 0 640 170" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#323847"/>
+            </marker>
+          </defs>
+          <path class="flow-arrow" id="fa1" d="M170,45 L230,45"/>
+          <path class="flow-arrow" id="fa2" d="M170,120 Q200,120 200,82 Q200,45 230,45" style="opacity:0"/>
+          <path class="flow-arrow" id="fa3" d="M400,45 L460,45"/>
+          <g class="flow-box" id="fb1" transform="translate(10,10)"><rect width="160" height="70" rx="8"/>
+            <text x="14" y="28">📊 Data tab</text><text class="sub" x="14" y="48">reads hours / scores</text></g>
+          <g class="flow-box" id="fb2" transform="translate(230,10)"><rect width="160" height="70" rx="8"/>
+            <text x="14" y="28">🧠 Train tab</text><text class="sub" x="14" y="48">button → train_model()</text></g>
+          <g class="flow-box" id="fb3" transform="translate(460,10)"><rect width="160" height="70" rx="8"/>
+            <text x="14" y="28">session_state</text><text class="sub" x="14" y="48">stores m, c, history</text></g>
+          <g class="flow-box" id="fb4" transform="translate(230,100)"><rect width="160" height="60" rx="8"/>
+            <text x="14" y="26">🔮 Predict tab</text><text class="sub" x="14" y="45">reads m, c back out</text></g>
+          <path class="flow-arrow" id="fa4" d="M540,80 L540,130 L400,130"/>
+        </svg>
+        <div class="flow-caption" id="flowCaption">Press play to watch a click travel through the app.</div>
+        <div class="btn-row" style="margin-top:10px;">
+          <button class="btn" id="play6">▶ Play</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Worked code example</div>
+      <div class="code-block">
+        <div class="code-head"><span>app.py — inside the Train tab</span><button class="copy-btn" data-copy="code6">Copy</button></div>
+        <pre id="code6"><span class="kw">if</span> st.button(<span class="cm">"🚀 Train Model"</span>, type=<span class="cm">"primary"</span>):
+    m, c, history = train_model(learning_rate, int(steps))
+    st.session_state.m = m
+    st.session_state.c = c
+    st.session_state.history = history</pre>
+      </div>
+      <p>The Predict tab later checks <code>if "m" not in st.session_state</code> and shows a warning if
+        training hasn't happened yet — session state is also how the app knows what stage the user is at.</p>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-label">PRO TIP</span>
+      <p>Any variable a Streamlit app needs to remember across reruns — not just across tabs — belongs in
+        <code>session_state</code>. A plain local variable is wiped the moment the script reruns.</p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 7 ============ -->
+  <section class="concept" id="c7">
+    <div class="concept-num">07 / 07</div>
+    <h2>Making predictions</h2>
+    <p>Once <code>m</code> and <code>c</code> are trained, prediction is just plugging a new number of hours
+      into the same formula from section 1 — no retraining required.</p>
+
+    <div class="sub-block">
+      <div class="sub-label">Interactive demonstration</div>
+      <p>This uses the actual trained line — either the default full run of <code>train_model(0.01, 1000)</code>,
+        or, if you trained one yourself in section 4, that one.</p>
+      <div class="widget">
+        <div class="controls" style="max-width:420px;">
+          <div class="slider-row">
+            <label>Study hours <span class="val" id="hoursOut">6.0</span></label>
+            <input type="range" id="hoursSlider" min="0" max="15" step="0.5" value="6">
+          </div>
+          <div class="readout">
+            <div class="item good"><div class="k">PREDICTED SCORE</div><div class="v" id="predOut">—</div></div>
+            <div class="item"><div class="k">USING</div><div class="v" id="predSrc" style="font-size:.8rem;">default trained line</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="example-cards">
+        <div class="example-card"><div class="h">📚 2 hours</div><div class="v" id="ex2">—</div></div>
+        <div class="example-card"><div class="h">📚 5 hours</div><div class="v" id="ex5">—</div></div>
+        <div class="example-card"><div class="h">📚 8 hours</div><div class="v" id="ex8">—</div></div>
+      </div>
+    </div>
+
+    <div class="sub-block">
+      <div class="sub-label">Worked code example</div>
+      <div class="code-block">
+        <div class="code-head"><span>app.py — Predict tab</span><button class="copy-btn" data-copy="code7">Copy</button></div>
+        <pre id="code7">result = predict(study_hours, m, c)
+st.success(<span class="cm">f"🎯 Predicted Exam Score: {result:.1f}"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="callout pitfall">
+      <span class="callout-label">PITFALL</span>
+      <p>The slider above goes well past 5 hours — the largest value the model was actually trained on. Far
+        outside the training range, a straight line keeps climbing forever, which is rarely realistic (a
+        student studying 40 hours a week won't keep gaining marks at the same steady rate). This is
+        <strong>extrapolation risk</strong>, and it applies to every linear model, not just this one.</p>
+    </div>
+  </section>
+
+  <!-- ============ PIPELINE ============ -->
+  <section id="pipeline" style="padding:56px 0; border-bottom:1px solid var(--border);">
+    <div class="sub-label">How it all fits together</div>
+    <h2>One loop, from raw numbers to a trained agent</h2>
+    <p>Step through the full pipeline the app runs when you press "Train Model" — the same seven ideas, now
+      working together in sequence.</p>
+    <div class="flow">
+      <svg viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg">
+        <path class="flow-arrow" id="pa1" d="M170,35 L230,35"/>
+        <path class="flow-arrow" id="pa2" d="M400,35 L460,35"/>
+        <path class="flow-arrow" id="pa3" d="M540,70 L540,110"/>
+        <path class="flow-arrow" id="pa4" d="M460,145 L400,145"/>
+        <path class="flow-arrow" id="pa5" d="M230,145 L170,145"/>
+        <path class="flow-arrow" id="pa6" d="M90,110 L90,70" style="opacity:0"/>
+        <path class="flow-arrow" id="pa7" d="M90,180 L90,220"/>
+        <path class="flow-arrow" id="pa8" d="M170,255 L460,255"/>
+        <g class="flow-box" id="pb1" transform="translate(10,0)"><rect width="160" height="70" rx="8"/><text x="14" y="28">Data</text><text class="sub" x="14" y="48">hours, scores</text></g>
+        <g class="flow-box" id="pb2" transform="translate(230,0)"><rect width="160" height="70" rx="8"/><text x="14" y="28">Predict</text><text class="sub" x="14" y="48">m·x + c</text></g>
+        <g class="flow-box" id="pb3" transform="translate(460,0)"><rect width="160" height="70" rx="8"/><text x="14" y="28">Loss</text><text class="sub" x="14" y="48">how wrong?</text></g>
+        <g class="flow-box" id="pb4" transform="translate(460,110)"><rect width="160" height="70" rx="8"/><text x="14" y="28">Gradients</text><text class="sub" x="14" y="48">which way?</text></g>
+        <g class="flow-box" id="pb5" transform="translate(230,110)"><rect width="160" height="70" rx="8"/><text x="14" y="28">Update m, c</text><text class="sub" x="14" y="48">step downhill</text></g>
+        <g class="flow-box" id="pb6" transform="translate(10,110)"><rect width="160" height="70" rx="8"/><text x="14" y="28">Repeat</text><text class="sub" x="14" y="48">1000 steps</text></g>
+        <g class="flow-box" id="pb7" transform="translate(10,220)"><rect width="160" height="40" rx="8"/><text x="14" y="25">Trained model</text></g>
+        <g class="flow-box" id="pb8" transform="translate(460,220)"><rect width="160" height="40" rx="8"/><text x="14" y="25">🔮 Predict tab</text></g>
+      </svg>
+      <div class="flow-caption" id="pipeCaption">Press play to run the full training pipeline.</div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn" id="playPipe">▶ Play pipeline</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAKEAWAYS ============ -->
+  <section id="takeaways" style="padding:56px 0;">
+    <div class="sub-label">Key takeaways</div>
+    <h2>What you now understand</h2>
+    <p>You've seen every moving part behind <code>app.py</code>: a formula that predicts, a loss that scores
+      the prediction, a gradient that points toward improvement, a loop that takes that step thousands of
+      times, a learning rate that controls how boldly it steps, and a small Streamlit app that wires all of it
+      into something clickable.</p>
+    <p>Nothing here was a black box — you built the descent, the loss, and the gradients yourself, in plain
+      Python, the same way libraries like scikit-learn or PyTorch do it under the hood at far larger scale.
+      A neural network is, at its core, many of these <code>m·x + c</code> steps stacked and connected — the
+      training loop you just watched converge is the same loop that trains them, just repeated across millions
+      of parameters instead of two.</p>
+    <p>Next, try swapping in a second input feature (say, hours slept), or a dataset with more than five points,
+      and watch the same four functions — <code>predict</code>, <code>calculate_loss</code>,
+      <code>calculate_gradients</code>, <code>train_model</code> — barely need to change to handle it. That's
+      the real payoff of building it from scratch once: you'll recognise this shape everywhere you go next.</p>
+  </section>
+
+  <footer>Prediction Agent · Learning Notebook · built from <code>app.py</code> and <code>day.py</code></footer>
+
+</main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var hours = [1,2,3,4,5];
+  var scores = [52,58,62,71,78];
+
+  function predict(x,m,c){ return m*x+c; }
+  function calcLoss(m,c){
+    var total=0;
+    for(var i=0;i<hours.length;i++){ var e = predict(hours[i],m,c)-scores[i]; total += e*e; }
+    return total/hours.length;
+  }
+  function calcGrad(m,c){
+    var gm=0,gc=0,n=hours.length;
+    for(var i=0;i<hours.length;i++){
+      var e = predict(hours[i],m,c)-scores[i];
+      gm += 2*e*hours[i];
+      gc += 2*e;
+    }
+    return [gm/n, gc/n];
+  }
+  function trainModel(lr, steps){
+    var m=0,c=0,history=[];
+    for(var s=0;s<steps;s++){
+      var g = calcGrad(m,c);
+      m -= lr*g[0]; c -= lr*g[1];
+      history.push(calcLoss(m,c));
+    }
+    return {m:m,c:c,history:history};
+  }
+
+  // shared "final trained" state used by section 7
+  var globalTrained = trainModel(0.01, 1000);
+
+  // ---------- generic scatter+line plot on canvas ----------
+  function plotScatterLine(canvas, m, c, opts){
+    opts = opts || {};
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    var pad = {l:46,r:20,t:20,b:36};
+    var xMin=0, xMax=6, yMin=40, yMax=95;
+    function px(x){ return pad.l + (x-xMin)/(xMax-xMin)*(w-pad.l-pad.r); }
+    function py(y){ return h-pad.b - (y-yMin)/(yMax-yMin)*(h-pad.t-pad.b); }
+
+    // axes grid
+    ctx.strokeStyle = '#262a34'; ctx.lineWidth=1; ctx.font='11px sans-serif'; ctx.fillStyle='#6b7280';
+    for(var gy=yMin; gy<=yMax; gy+=10){
+      ctx.beginPath(); ctx.moveTo(px(xMin),py(gy)); ctx.lineTo(px(xMax),py(gy)); ctx.stroke();
+      ctx.fillText(gy, 8, py(gy)+4);
+    }
+    for(var gx=xMin; gx<=xMax; gx+=1){
+      ctx.fillText(gx+'h', px(gx)-6, h-pad.b+18);
+    }
+
+    // error segments (if requested)
+    if(opts.showErrors){
+      ctx.lineWidth = 3;
+      for(var i=0;i<hours.length;i++){
+        var predY = predict(hours[i], m, c);
+        var err = predY - scores[i];
+        ctx.strokeStyle = 'rgba(209,88,90,' + Math.min(1, 0.35 + Math.abs(err)/25) + ')';
+        ctx.beginPath();
+        ctx.moveTo(px(hours[i]), py(scores[i]));
+        ctx.lineTo(px(hours[i]), py(predY));
+        ctx.stroke();
+      }
+    }
+
+    // line
+    ctx.strokeStyle = '#e8a33d'; ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.moveTo(px(xMin), py(predict(xMin,m,c)));
+    ctx.lineTo(px(xMax), py(predict(xMax,m,c)));
+    ctx.stroke();
+
+    // data points
+    ctx.fillStyle = '#5fb4a2';
+    for(var j=0;j<hours.length;j++){
+      ctx.beginPath();
+      ctx.arc(px(hours[j]), py(scores[j]), 5, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  function plotLossCurve(canvas, history, uptoIndex){
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    var pad = {l:46,r:20,t:14,b:24};
+    var n = uptoIndex!==undefined ? uptoIndex : history.length;
+    if(n<2) return;
+    var maxLoss = 0;
+    for(var i=0;i<n;i++){ if(history[i]>maxLoss) maxLoss=history[i]; }
+    maxLoss = Math.max(maxLoss, 1);
+    function px(i){ return pad.l + i/(history.length-1)*(w-pad.l-pad.r); }
+    function py(v){ return h-pad.b - v/maxLoss*(h-pad.t-pad.b); }
+    ctx.strokeStyle='#262a34'; ctx.font='10px sans-serif'; ctx.fillStyle='#6b7280';
+    ctx.fillText('loss', 6, 16);
+    ctx.strokeStyle = '#d1585a'; ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(history[0]));
+    for(var k=1;k<n;k++){ ctx.lineTo(px(k), py(history[k])); }
+    ctx.stroke();
+  }
+
+  // ---------- copy buttons ----------
+  document.querySelectorAll('.copy-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = btn.getAttribute('data-copy');
+      var text = document.getElementById(id).innerText;
+      function done(){
+        var old = btn.textContent;
+        btn.textContent = 'Copied'; btn.classList.add('copied');
+        setTimeout(function(){ btn.textContent = old; btn.classList.remove('copied'); }, 1400);
+      }
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text, done); });
+      } else { fallbackCopy(text, done); }
+    });
+  });
+  function fallbackCopy(text, cb){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta); cb();
+  }
+
+  // ---------- TOC mobile toggle + active highlight ----------
+  var tocToggle = document.getElementById('toc-toggle');
+  var toc = document.getElementById('toc');
+  var scrim = document.getElementById('toc-scrim');
+  tocToggle.addEventListener('click', function(){ toc.classList.toggle('open'); scrim.classList.toggle('open'); });
+  scrim.addEventListener('click', function(){ toc.classList.remove('open'); scrim.classList.remove('open'); });
+  toc.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){ toc.classList.remove('open'); scrim.classList.remove('open'); });
+  });
+  var sectionIds = ['hero','map','c1','c2','c3','c4','c5','c6','c7','pipeline','takeaways'];
+  var tocLinks = {};
+  toc.querySelectorAll('a').forEach(function(a){ tocLinks[a.getAttribute('href').slice(1)] = a; });
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        Object.values(tocLinks).forEach(function(l){ l.classList.remove('active'); });
+        var link = tocLinks[entry.target.id];
+        if(link) link.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-20% 0px -70% 0px'});
+  sectionIds.forEach(function(id){ var el = document.getElementById(id); if(el) observer.observe(el); });
+
+  // ===================== SECTION 1: linear model =====================
+  (function(){
+    var m1 = document.getElementById('m1'), c1 = document.getElementById('c1');
+    var cv1 = document.getElementById('cv1');
+    function render(){
+      var m = parseFloat(m1.value), c = parseFloat(c1.value);
+      document.getElementById('m1out').textContent = m.toFixed(2);
+      document.getElementById('c1out').textContent = c.toFixed(0);
+      document.getElementById('eq1').textContent = 'score = ' + m.toFixed(2) + ' × hours + ' + c.toFixed(0);
+      plotScatterLine(cv1, m, c, {});
+    }
+    m1.addEventListener('input', render); c1.addEventListener('input', render);
+    render();
+  })();
+
+  // ===================== SECTION 2: loss =====================
+  (function(){
+    var m2 = document.getElementById('m2'), c2 = document.getElementById('c2');
+    var cv2 = document.getElementById('cv2');
+    function render(){
+      var m = parseFloat(m2.value), c = parseFloat(c2.value);
+      document.getElementById('m2out').textContent = m.toFixed(2);
+      document.getElementById('c2out').textContent = c.toFixed(0);
+      document.getElementById('loss2').textContent = calcLoss(m,c).toFixed(1);
+      plotScatterLine(cv2, m, c, {showErrors:true});
+    }
+    m2.addEventListener('input', render); c2.addEventListener('input', render);
+    render();
+  })();
+
+  // ===================== SECTION 3: gradients =====================
+  (function(){
+    var cv3 = document.getElementById('cv3');
+    var state = {m:0, c:0};
+    function render(){
+      var g = calcGrad(state.m, state.c);
+      document.getElementById('m3out').textContent = state.m.toFixed(3);
+      document.getElementById('c3out').textContent = state.c.toFixed(3);
+      document.getElementById('loss3').textContent = calcLoss(state.m,state.c).toFixed(1);
+      document.getElementById('gm3').textContent = g[0].toFixed(2);
+      document.getElementById('gc3').textContent = g[1].toFixed(2);
+      var hint = (g[0] > 0 ? 'm should decrease' : 'm should increase') + '  ·  ' +
+                 (g[1] > 0 ? 'c should decrease' : 'c should increase');
+      document.getElementById('arrowHint').textContent = hint;
+      plotScatterLine(cv3, state.m, state.c, {showErrors:true});
+    }
+    document.getElementById('step3').addEventListener('click', function(){
+      var g = calcGrad(state.m, state.c);
+      var lr = 0.01;
+      state.m -= lr*g[0]; state.c -= lr*g[1];
+      render();
+    });
+    document.getElementById('reset3').addEventListener('click', function(){ state.m=0; state.c=0; render(); });
+
+    // step reveal interactivity
+    document.querySelectorAll('#gradSteps .step-item').forEach(function(item){
+      item.addEventListener('click', function(){
+        document.querySelectorAll('#gradSteps .step-item').forEach(function(i){ i.classList.remove('active'); });
+        item.classList.add('active');
+      });
+    });
+    render();
+  })();
+
+  // ===================== SECTION 4: gradient descent animation =====================
+  (function(){
+    var cv4 = document.getElementById('cv4'), cv4loss = document.getElementById('cv4loss');
+    var lr4 = document.getElementById('lr4');
+    var playing = false, timer = null;
+    var run = trainModel(parseFloat(lr4.value), 1000);
+    var idx = 0;
+
+    function drawAt(i){
+      var m,c,loss;
+      if(i<=0){ m=0;c=0;loss=calcLoss(0,0); }
+      else {
+        // recompute m,c at step i by re-running (cheap: 1000 steps max)
+        var mm=0, cc=0;
+        for(var s=0;s<i;s++){
+          var g = calcGrad(mm,cc);
+          mm -= run.lr*g[0]; cc -= run.lr*g[1];
+        }
+        m=mm;c=cc;loss=run.history[i-1];
+      }
+      document.getElementById('step4').textContent = i + ' / 1000';
+      document.getElementById('m4out').textContent = m.toFixed(2);
+      document.getElementById('c4out').textContent = c.toFixed(2);
+      document.getElementById('loss4').textContent = loss.toFixed(1);
+      plotScatterLine(cv4, m, c, {});
+      plotLossCurve(cv4loss, run.history, Math.max(2,i));
+    }
+
+    // faster approach: precompute m,c trajectory at coarse checkpoints, animate loss curve every frame but recompute line every few frames
+    var trajStep = 5;
+    var traj = [];
+    (function precompute(){
+      var mm=0, cc=0;
+      traj.push([0,0]);
+      for(var s=0;s<1000;s++){
+        var g = calcGrad(mm,cc);
+        mm -= run.lr*g[0]; cc -= run.lr*g[1];
+        if((s+1)%trajStep===0) traj.push([mm,cc]);
+      }
+    })();
+
+    function drawFast(i){
+      var ti = Math.min(traj.length-1, Math.floor(i/trajStep));
+      var m = traj[ti][0], c = traj[ti][1];
+      var loss = i<=0 ? calcLoss(0,0) : run.history[Math.min(i,1000)-1];
+      document.getElementById('step4').textContent = i + ' / 1000';
+      document.getElementById('m4out').textContent = m.toFixed(2);
+      document.getElementById('c4out').textContent = c.toFixed(2);
+      document.getElementById('loss4').textContent = loss.toFixed(1);
+      plotScatterLine(cv4, m, c, {});
+      plotLossCurve(cv4loss, run.history, Math.max(2,i));
+    }
+
+    function retrain(){
+      run = trainModel(parseFloat(lr4.value), 1000);
+      run.lr = parseFloat(lr4.value);
+      traj = [];
+      var mm=0, cc=0; traj.push([0,0]);
+      for(var s=0;s<1000;s++){
+        var g = calcGrad(mm,cc);
+        mm -= run.lr*g[0]; cc -= run.lr*g[1];
+        if((s+1)%trajStep===0) traj.push([mm,cc]);
+      }
+    }
+    run.lr = parseFloat(lr4.value);
+
+    function tick(){
+      idx += 8;
+      if(idx>1000){ idx=1000; drawFast(idx); stop(); return; }
+      drawFast(idx);
+      timer = requestAnimationFrame(tick);
+    }
+    function play(){
+      if(playing) return;
+      playing = true;
+      document.getElementById('play4').textContent = '⏸ Pause';
+      tick();
+    }
+    function stop(){
+      playing = false;
+      document.getElementById('play4').textContent = '▶ Play';
+      if(timer) cancelAnimationFrame(timer);
+    }
+    document.getElementById('play4').addEventListener('click', function(){ playing ? stop() : play(); });
+    document.getElementById('reset4').addEventListener('click', function(){ stop(); idx=0; drawFast(0); });
+    lr4.addEventListener('input', function(){
+      document.getElementById('lr4out').textContent = parseFloat(lr4.value).toFixed(3);
+      stop(); idx=0; retrain(); drawFast(0);
+    });
+    drawFast(0);
+  })();
+
+  // ===================== SECTION 5: learning rate comparison =====================
+  (function(){
+    var configs = [
+      {canvas: document.getElementById('cv5a'), lr:0.002, out: document.getElementById('loss5a')},
+      {canvas: document.getElementById('cv5b'), lr:0.02, out: document.getElementById('loss5b')},
+      {canvas: document.getElementById('cv5c'), lr:0.2, out: document.getElementById('loss5c')}
+    ];
+    var steps = 60;
+    var trajs = configs.map(function(cfg){
+      var mm=0,cc=0, t=[[0,0]], losses=[calcLoss(0,0)];
+      for(var s=0;s<steps;s++){
+        var g = calcGrad(mm,cc);
+        mm -= cfg.lr*g[0]; cc -= cfg.lr*g[1];
+        if(!isFinite(mm) || Math.abs(mm) > 1e6){ mm = mm>0?1e6:-1e6; }
+        if(!isFinite(cc) || Math.abs(cc) > 1e6){ cc = cc>0?1e6:-1e6; }
+        t.push([mm,cc]);
+        losses.push(calcLoss(mm,cc));
+      }
+      return {traj:t, losses:losses};
+    });
+
+    function miniPlot(canvas, m, c){
+      var ctx = canvas.getContext('2d');
+      var w = canvas.width, h = canvas.height;
+      ctx.clearRect(0,0,w,h);
+      var pad=8;
+      var xMin=0,xMax=6,yMin=-40,yMax=140;
+      function px(x){ return pad + (x-xMin)/(xMax-xMin)*(w-2*pad); }
+      function py(y){ return h-pad - (y-yMin)/(yMax-yMin)*(h-2*pad); }
+      ctx.fillStyle='#5fb4a2';
+      for(var i=0;i<hours.length;i++){ ctx.beginPath(); ctx.arc(px(hours[i]),py(scores[i]),3,0,Math.PI*2); ctx.fill(); }
+      var yA = Math.max(yMin,Math.min(yMax, predict(xMin,m,c)));
+      var yB = Math.max(yMin,Math.min(yMax, predict(xMax,m,c)));
+      ctx.strokeStyle='#e8a33d'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(px(xMin),py(yA)); ctx.lineTo(px(xMax),py(yB)); ctx.stroke();
+    }
+
+    var i5 = 0, playing5=false, timer5=null;
+    function render5(i){
+      configs.forEach(function(cfg, idx){
+        var t = trajs[idx].traj[Math.min(i, steps)];
+        miniPlot(cfg.canvas, t[0], t[1]);
+        var loss = trajs[idx].losses[Math.min(i, steps)];
+        cfg.out.textContent = isFinite(loss) ? loss.toFixed(0) : '∞';
+      });
+    }
+    function tick5(){
+      i5 += 1;
+      if(i5>steps){ stop5(); return; }
+      render5(i5);
+      timer5 = requestAnimationFrame(function(){ setTimeout(tick5, 30); });
+    }
+    function stop5(){ playing5=false; document.getElementById('play5').textContent='▶ Run all three'; if(timer5) cancelAnimationFrame(timer5); }
+    document.getElementById('play5').addEventListener('click', function(){
+      if(playing5) return;
+      playing5=true; document.getElementById('play5').textContent='⏸ Running…';
+      i5=0; tick5();
+    });
+    document.getElementById('reset5').addEventListener('click', function(){ stop5(); i5=0; render5(0); });
+    render5(0);
+  })();
+
+  // ===================== SECTION 6: streamlit flow =====================
+  (function(){
+    var boxes = ['fb1','fb2','fb3','fb4'];
+    var arrows = ['fa1','fa3','fa4'];
+    var captions = [
+      'User opens the Data tab — hours and scores are just plain Python lists.',
+      'User clicks "Train Model" — train_model() runs the full gradient descent loop.',
+      'Results are written into st.session_state.m / .c / .history so they survive the rerun.',
+      'User switches to Predict — session_state.m and .c are read back to answer instantly.'
+    ];
+    var seq = [
+      {box:'fb1'}, {arrow:'fa1', box:'fb2'}, {arrow:'fa3', box:'fb3'}, {arrow:'fa4', box:'fb4'}
+    ];
+    var playing6=false, i6=0, timer6=null;
+    function clearAll(){
+      boxes.forEach(function(id){ document.getElementById(id).classList.remove('active'); });
+      arrows.forEach(function(id){ document.getElementById(id).classList.remove('active'); });
+    }
+    function step6(){
+      clearAll();
+      var s = seq[i6];
+      if(s.arrow) document.getElementById(s.arrow).classList.add('active');
+      if(s.box) document.getElementById(s.box).classList.add('active');
+      document.getElementById('flowCaption').textContent = captions[i6];
+      i6++;
+      if(i6 < seq.length){ timer6 = setTimeout(step6, 1300); }
+      else { playing6=false; document.getElementById('play6').textContent='▶ Play'; }
+    }
+    document.getElementById('play6').addEventListener('click', function(){
+      if(playing6) return;
+      playing6=true; i6=0; document.getElementById('play6').textContent='⏸ Playing…';
+      step6();
+    });
+  })();
+
+  // ===================== SECTION 7: predictions =====================
+  (function(){
+    var slider = document.getElementById('hoursSlider');
+    var trained4m = null, trained4c = null; // could be linked to section4 later
+    function currentModel(){
+      return {m: globalTrained.m, c: globalTrained.c};
+    }
+    function render(){
+      var h = parseFloat(slider.value);
+      document.getElementById('hoursOut').textContent = h.toFixed(1);
+      var model = currentModel();
+      var score = predict(h, model.m, model.c);
+      document.getElementById('predOut').textContent = score.toFixed(1);
+      document.getElementById('ex2').textContent = predict(2, model.m, model.c).toFixed(1);
+      document.getElementById('ex5').textContent = predict(5, model.m, model.c).toFixed(1);
+      document.getElementById('ex8').textContent = predict(8, model.m, model.c).toFixed(1);
+    }
+    slider.addEventListener('input', render);
+    render();
+  })();
+
+  // ===================== PIPELINE animation =====================
+  (function(){
+    var boxes = ['pb1','pb2','pb3','pb4','pb5','pb6','pb7','pb8'];
+    var arrows = ['pa1','pa2','pa3','pa4','pa5','pa7','pa8'];
+    var captions = [
+      'Start with the raw data: five (hours, score) pairs.',
+      'predict(x, m, c) turns the current line into a guess for each point.',
+      'calculate_loss() scores how wrong those guesses are, on average.',
+      'calculate_gradients() works out which way m and c should move.',
+      'm and c are updated a small step against the gradient.',
+      'The loop repeats this 1,000 times inside train_model().',
+      'The final m and c are the trained model — stored in session_state.',
+      'The Predict tab reuses that trained line for any new number of hours.'
+    ];
+    var seq = [
+      {box:'pb1'},
+      {arrow:'pa1', box:'pb2'},
+      {arrow:'pa2', box:'pb3'},
+      {arrow:'pa3', box:'pb4'},
+      {arrow:'pa4', box:'pb5'},
+      {arrow:'pa5', box:'pb6'},
+      {box:'pb7'},
+      {arrow:'pa8', box:'pb8'}
+    ];
+    var playing=false, i=0, timer=null;
+    function clearAll(){
+      boxes.forEach(function(id){ document.getElementById(id).classList.remove('active'); });
+      arrows.forEach(function(id){ document.getElementById(id).classList.remove('active'); });
+    }
+    function step(){
+      clearAll();
+      var s = seq[i];
+      if(s.arrow) document.getElementById(s.arrow).classList.add('active');
+      if(s.box) document.getElementById(s.box).classList.add('active');
+      document.getElementById('pipeCaption').textContent = captions[i];
+      i++;
+      if(i < seq.length){ timer = setTimeout(step, 1250); }
+      else { playing=false; document.getElementById('playPipe').textContent='▶ Play pipeline'; }
+    }
+    document.getElementById('playPipe').addEventListener('click', function(){
+      if(playing) return;
+      playing=true; i=0; document.getElementById('playPipe').textContent='⏸ Playing…';
+      step();
+    });
+  })();
+
+})();
+</script>
+</body>
+</html>
